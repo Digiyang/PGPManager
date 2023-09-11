@@ -2,7 +2,7 @@
 ![Banner](banner.jpg)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-<!-- [![GitHub stars](https://img.shields.io/github/stars/Digiyang/PGPManager.svg)] -->(https://github.com/Digiyang/PGPManager/stargazers)
+<!-- [![GitHub stars](https://img.shields.io/github/stars/Digiyang/PGPManager.svg)] (https://github.com/Digiyang/PGPManager/stargazers) -->
 <!-- [![GitHub forks](https://img.shields.io/github/forks/Digiyang/PGPManager.svg)](https://github.com/Digiyang/PGPManager/network) -->
 [![GitHub issues](https://img.shields.io/github/issues/Digiyang/PGPManager.svg)](https://github.com/Digiyang/PGPManager/issues)
 
