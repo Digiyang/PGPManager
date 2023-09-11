@@ -1,0 +1,19 @@
+[package]
+name = "gui"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "*"
+chrono = "*"
+crossterm = "*"
+proceed = "*"
+rpassword = "*"
+sequoia-openpgp = "1.14.0"
+serde = "*"
+home = "*"
+tempfile = "*"
+termion = "*"
+tui = { package = "ratatui" }
