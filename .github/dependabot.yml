@@ -5,10 +5,13 @@
 
 version: 2
 updates:
-  - package-ecosystem: "cargo" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "cargo"
+    directory: "/"
     schedule:
       interval: "daily"
-      commit-message:
-        prefix: "chore"
-        include: "scope"
+    # Include a list of updated dependencies
+    # with a prefix determined by the dependency group
+    commit-message:
+      prefix: "prod"
+      prefix-development: "dev"
+      include: "scope"
