@@ -1,5 +1,5 @@
 # PGPManager
-![Banner](banner.jpg)
+![](banner.jpg)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![GitHub issues](https://img.shields.io/github/issues/Digiyang/PGPManager.svg)](https://github.com/Digiyang/PGPManager/issues)
@@ -8,25 +8,44 @@
 
 PGPmanager is a Terminal User Interface (TUI) designed to facilitate and manage the process of PGP (Pretty Good Privacy) key management.
 
-PGP is a widely-used encryption standard that allows users to secure their communication and data by encrypting messages and files with public and private keys.The primary purpose of PGPmanager is to provide an intuitive and interactive interface for users to perform various PGP key operations, such as generating key pairs, exporting and importing certificates, editing passwords and expiration times, revoking keys, and more. The application serves as a bridge between the user and the underlying functionality provided by the Sequoia-OpenPGP crate, a powerful library for PGP key management in Rust.
+<!-- Anyone checking this out and who would be qualify to use it, will know what PGP is, so lets get straight to the point. -->
+<!-- PGP is a widely-used encryption standard that allows users to secure their communication and data by encrypting messages and files with public and private keys. -->
+The primary purpose of PGPmanager is to provide an intuitive and interactive interface for users to perform various PGP key operations, such as:
+<!-- created a list, as this text got very long. As this is repetitive because of the feature section below, you might just take it out? -->
+- generating key pairs 
+- exporting and importing certificates 
+- editing passwords and expiration times
+- revoking keys 
+- and more 
 
-## Future Releases
+The application serves as a bridge between the user and the underlying functionality provided by the [Sequoia-OpenPGP](https://sequoia-pgp.org/) crate, a powerful library for PGP key management in Rust.
 
-PGPManager is currently in its ALPHA stage. 
+---
 
-This tool was developed as part of a bachelor's thesis and represents my first attempt with Rust and PGP. As such, it may have security flaws, bugs or boilerplate code.
+## Releases
+
+PGPManager is currently in its *Alpha* stage. 
+
+### Release Notes
+This tool was developed as part of a bachelor thesis and my first project written in [Rust](https://www.rust-lang.org/), leveraging [PGP](https://www.openpgp.org/). As such, it may have security flaws, bugs or contain boilerplate code. Reviews, critiques, and contributions are highly appreciated.
 
 I plan to release stable versions on popular package managers like Cargo, Homebrew, and others in the near future. Stay tuned for updates!
-## Features
-![help](help.png)
 
-- Generate PGP keypair + revocation certificate
+---
+
+## Features
+![](help.png)
+
+- Generate PGP keypair & revocation certificates
 - Export public keys
 - Edit key passwords and expiration times
 - Add/Delete users
 - Revoke keys
-- User can choose to extract a public key for each user and with the same private key 
+<!-- user can .... for each user -- is unclear who user is, --better?: contact, recipient -->
+- Users can choose to extract a public key for each user and with the same private key 
 - User-friendly and robust interface.
+
+---
 
 ## Table of Contents
 
@@ -44,9 +63,14 @@ I plan to release stable versions on popular package managers like Cargo, Homebr
 - [Contact](#contact)
 - [Copyright](#copyright)
 
+---
+
 ## Getting Started
 
+<!-- does this section need to be here? It doesnt contribute a significant information -->
 To get started with PGPManager, follow the installation instructions below.
+
+---
 
 ## Installation
 
@@ -86,6 +110,9 @@ different platforms
       ```bash
       cargo run --release
       ```
+
+---
+
 ## Usage
 - Use the arrow keys to navigate through the interface.
 - Press `h` to view the help menu.
@@ -102,16 +129,25 @@ different platforms
 - Press `u` to export a new public key for selected user(s).
 - Press `r` to revoke a key.
 - Follow the on-screen prompts to perform various key operations.
+
+---
+
 # Contributing
-Contributions are welcome! Feel free to open issues for any improvements or bug fixes.
+Contributions are welcome! Feel free to open [issues](https://github.com/Digiyang/PGPManager/issues) for any improvements or bug fixes.
+
+---
 
 # License
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
+---
+
 # Contact
-- [Email](mailto:Zeom@proton.me)
-- [LinkedIn](https://www.linkedin.com/in/moez-rjiba-1a3ab21a2/)
-- [Github](github.com/Digiyang)
+<!-- dude, you re handling pgp and not providing a pgp key? :D -->
+- Email: [zeom@proton.me](mailto:zeom@proton.me)
+- LinkedIn: [Moez Rjiba](https://www.linkedin.com/in/moez-rjiba-1a3ab21a2/)
+- GitHub: [Digiyang](github.com/Digiyang)
+<!-- allthough here on github, they will be on your profile right? -->
 
 # Copyright
 Copyright © 2023, [Moez Rjiba](mailto:Zeom@proton.me). All rights reserved.
