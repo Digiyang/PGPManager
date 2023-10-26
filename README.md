@@ -150,4 +150,4 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 <!-- allthough here on github, they will be on your profile right? -->
 
 # Copyright
-Copyright © 2023, [Moez Rjiba](mailto:Zeom@proton.me). All rights reserved.
+Copyright © 2023, [Moez Rjiba](mailto:zeom@proton.me). All rights reserved.
