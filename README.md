@@ -144,10 +144,9 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 # Contact
 <!-- dude, you re handling pgp and not providing a pgp key? :D -->
-- Email: [zeom@proton.me](mailto:zeom@proton.me)
+- Email: [me@moez-rjiba.de](mailto:me@moez-rjiba.de)
 - LinkedIn: [Moez Rjiba](https://www.linkedin.com/in/moez-rjiba-1a3ab21a2/)
-- GitHub: [Digiyang](github.com/Digiyang)
 <!-- allthough here on github, they will be on your profile right? -->
 
 # Copyright
-Copyright © 2023, [Moez Rjiba](mailto:zeom@proton.me). All rights reserved.
+Copyright © 2023, [Moez Rjiba](moez-rjiba.de). All rights reserved.
