@@ -144,7 +144,7 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 # Contact
 <!-- dude, you re handling pgp and not providing a pgp key? :D -->
-- Email: [me@moez-rjiba.de](mailto:me@moez-rjiba.de)
+- Email: [me@moez-rjiba.de](mailto:me@moez-rjiba.de) | [PK](https://keys.openpgp.org/vks/v1/by-fingerprint/86A99D41E4949A6C69F146DCFFECDB3134787C18)
 - LinkedIn: [Moez Rjiba](https://www.linkedin.com/in/moez-rjiba-1a3ab21a2/)
 <!-- allthough here on github, they will be on your profile right? -->
 
