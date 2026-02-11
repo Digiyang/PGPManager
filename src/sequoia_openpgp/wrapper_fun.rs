@@ -1,12 +1,12 @@
 use std::{fs::File, io::BufReader};
 
-use sequoia_openpgp::{crypto::Password, parse::Parse, Cert};
-use tui::{
-    backend::Backend,
+use ratatui::{
+    backend::CrosstermBackend,
     style::{Color, Style},
-    text::{Span, Spans},
+    text::{Line, Span},
     Terminal,
 };
+use sequoia_openpgp::{crypto::Password, parse::Parse, Cert};
 
 use crate::{
     app::ui::{draw_input_prompt, show_user_selection_popup},
@@ -16,9 +16,9 @@ use crate::{
 use super::certificate_manager::CertificateManager;
 
 // wrapper function for generating a keypair
-pub fn generate_keypair_tui<B: Backend>(
+pub fn generate_keypair_tui(
     cert_manager: &CertificateManager,
-    terminal: &mut Terminal<B>,
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
     user_id: &mut String,
     validity: &mut String,
     cipher: &mut String,
@@ -28,7 +28,7 @@ pub fn generate_keypair_tui<B: Backend>(
     let style = Style::default().fg(Color::Yellow);
     *user_id = draw_input_prompt(
         terminal,
-        &[Spans::from(Span::styled(
+        &[Line::from(Span::styled(
             "Enter user id (e.g 'Bob <Bob@domain.de>):",
             style,
         ))],
@@ -44,9 +44,9 @@ pub fn generate_keypair_tui<B: Backend>(
         "   <n>m = expires in n months",
         "   <n>y = expires in n years",
     ];
-    let validity_spans: Vec<Spans> = prompt_validity
+    let validity_spans: Vec<Line> = prompt_validity
         .into_iter()
-        .map(|line| Spans::from(Span::styled(line, style)))
+        .map(|line| Line::from(Span::styled(line, style)))
         .collect();
 
     let prompt_cipher = vec![
@@ -67,21 +67,21 @@ pub fn generate_keypair_tui<B: Backend>(
         "    EdDSA and ECDH over NIST P-521 with SHA512 and AES256",
     ];
 
-    let cipher_spans: Vec<Spans> = prompt_cipher
+    let cipher_spans: Vec<Line> = prompt_cipher
         .into_iter()
-        .map(|line| Spans::from(Span::styled(line, Style::default().fg(Color::Yellow))))
+        .map(|line| Line::from(Span::styled(line, Style::default().fg(Color::Yellow))))
         .collect();
 
     *validity = draw_input_prompt(terminal, &validity_spans, true)?;
     *cipher = draw_input_prompt(terminal, &cipher_spans, true)?;
     *pw = draw_input_prompt(
         terminal,
-        &[Spans::from(Span::styled("Enter password:", style))],
+        &[Line::from(Span::styled("Enter password:", style))],
         false,
     )?;
     *rpw = draw_input_prompt(
         terminal,
-        &[Spans::from(Span::styled("Repeat password:", style))],
+        &[Line::from(Span::styled("Repeat password:", style))],
         false,
     )?;
 
@@ -100,10 +100,10 @@ pub fn generate_keypair_tui<B: Backend>(
 }
 
 // wrapper function for the export_certificate function
-pub fn export_certificate_tui<B: Backend>(
+pub fn export_certificate_tui(
     cert_manager: &CertificateManager,
-    terminal: &mut Terminal<B>,
-    cert_path: &String,
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+    cert_path: &str,
     file_name: &mut String,
 ) -> Result<(), anyhow::Error> {
     let cert = Cert::from_reader(BufReader::new(File::open(cert_path)?))?;
@@ -113,18 +113,18 @@ pub fn export_certificate_tui<B: Backend>(
     } else {
         let secret = cert.primary_key().key().clone().parts_into_secret()?;
         let password =
-            draw_input_prompt(terminal, &[Spans::from("Enter key secret")], false)?.into();
+            draw_input_prompt(terminal, &[Line::from("Enter key secret")], false)?.into();
         match secret.decrypt_secret(&password) {
             Ok(_) => {
                 *file_name = draw_input_prompt(
                     terminal,
-                    &[Spans::from(
+                    &[Line::from(
                         "Enter exported certificate name (e.g. name.certificate.pgp):",
                     )],
                     true,
                 )?;
 
-                cert_manager.export_certificate(cert_path, &file_name)?;
+                cert_manager.export_certificate(cert_path, file_name)?;
             }
             Err(_) => {
                 return Err(anyhow::anyhow!("Wrong password!"));
@@ -135,32 +135,30 @@ pub fn export_certificate_tui<B: Backend>(
     Ok(())
 }
 
-pub fn edit_password_tui<B: Backend>(
+pub fn edit_password_tui(
     cert_manager: &CertificateManager,
-    terminal: &mut Terminal<B>,
-    certificate: &String,
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+    certificate: &str,
     original_pw: &mut String,
     new_password: &mut String,
     repeat_password: &mut String,
 ) -> Result<(), anyhow::Error> {
-    let key = Cert::from_reader(BufReader::new(File::open(&certificate)?))?;
+    let key = Cert::from_reader(BufReader::new(File::open(certificate)?))?;
     if !key.is_tsk() {
         return Err(anyhow::anyhow!("Not a secret key!"));
     } else {
         let secret = key.primary_key().key().clone().parts_into_secret()?;
-        *original_pw = draw_input_prompt(terminal, &[Spans::from("Enter key secret")], false)?;
+        *original_pw = draw_input_prompt(terminal, &[Line::from("Enter key secret")], false)?;
         let original_pw = Password::from(original_pw.clone());
         match secret.decrypt_secret(&original_pw) {
             Ok(_) => {
                 *new_password =
-                    draw_input_prompt(terminal, &[Spans::from("Enter new password")], false)?
-                        .into();
+                    draw_input_prompt(terminal, &[Line::from("Enter new password")], false)?;
                 *repeat_password =
-                    draw_input_prompt(terminal, &[Spans::from("Repeat new password")], false)?
-                        .into();
+                    draw_input_prompt(terminal, &[Line::from("Repeat new password")], false)?;
                 if new_password == repeat_password {
                     cert_manager.edit_password(
-                        &certificate,
+                        certificate,
                         &original_pw,
                         new_password.to_string(),
                         repeat_password.to_string(),
@@ -177,10 +175,10 @@ pub fn edit_password_tui<B: Backend>(
     Ok(())
 }
 
-pub fn edit_expiration_time_tui<B: Backend>(
+pub fn edit_expiration_time_tui(
     cert_manager: &CertificateManager,
-    terminal: &mut Terminal<B>,
-    certificate: &String,
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+    certificate: &str,
     original_pw: &mut String,
     new_expiration_time: &mut String,
 ) -> Result<(), anyhow::Error> {
@@ -193,24 +191,24 @@ pub fn edit_expiration_time_tui<B: Backend>(
         "   <n>m = expires in n months",
         "   <n>y = expires in n years",
     ];
-    let validity_spans: Vec<Spans> = prompt_validity
+    let validity_spans: Vec<Line> = prompt_validity
         .into_iter()
-        .map(|line| Spans::from(Span::styled(line, style)))
+        .map(|line| Line::from(Span::styled(line, style)))
         .collect();
 
-    let key = Cert::from_reader(BufReader::new(File::open(&certificate)?))?;
+    let key = Cert::from_reader(BufReader::new(File::open(certificate)?))?;
 
     if !key.is_tsk() {
         return Err(anyhow::anyhow!("Not a secret key!"));
     } else {
         let secret = key.primary_key().key().clone().parts_into_secret()?;
-        *original_pw = draw_input_prompt(terminal, &[Spans::from("Enter key secret")], false)?;
+        *original_pw = draw_input_prompt(terminal, &[Line::from("Enter key secret")], false)?;
         let original_pw = Password::from(original_pw.clone());
         match secret.decrypt_secret(&original_pw) {
             Ok(_) => {
                 *new_expiration_time = draw_input_prompt(terminal, &validity_spans, true)?;
                 cert_manager.edit_expiration_time(
-                    &certificate,
+                    certificate,
                     &original_pw,
                     new_expiration_time.to_string(),
                 )?;
@@ -224,22 +222,22 @@ pub fn edit_expiration_time_tui<B: Backend>(
     Ok(())
 }
 
-pub fn add_user_tui<B: Backend>(
+pub fn add_user_tui(
     cert_manager: &CertificateManager,
-    terminal: &mut Terminal<B>,
-    cert_path: &String,
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+    cert_path: &str,
     original_pw: &mut String,
     new_user: &mut String,
 ) -> Result<(), anyhow::Error> {
-    let key = Cert::from_reader(BufReader::new(File::open(&cert_path)?))?;
+    let key = Cert::from_reader(BufReader::new(File::open(cert_path)?))?;
 
     let secret = key.primary_key().key().clone().parts_into_secret()?;
-    *original_pw = draw_input_prompt(terminal, &[Spans::from("Enter key secret:")], false)?;
+    *original_pw = draw_input_prompt(terminal, &[Line::from("Enter key secret:")], false)?;
     let original_pw = Password::from(original_pw.clone());
     match secret.decrypt_secret(&original_pw) {
         Ok(_) => {
-            *new_user = draw_input_prompt(terminal, &[Spans::from("Enter new user:")], true)?;
-            cert_manager.add_user(&cert_path, &original_pw, new_user.to_string())?;
+            *new_user = draw_input_prompt(terminal, &[Line::from("Enter new user:")], true)?;
+            cert_manager.add_user(cert_path, &original_pw, new_user.to_string())?;
         }
         Err(_) => {
             return Err(anyhow::anyhow!("Wrong password!"));
@@ -248,10 +246,10 @@ pub fn add_user_tui<B: Backend>(
     Ok(())
 }
 
-pub fn split_users_tui<B: Backend>(
+pub fn split_users_tui(
     cert_manager: &CertificateManager,
-    terminal: &mut Terminal<B>,
-    cert_path: &String,
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+    cert_path: &str,
     file_name: &mut String,
     users: &mut StatefulList<String>,
     selected_items: &mut Vec<bool>,
@@ -266,7 +264,7 @@ pub fn split_users_tui<B: Backend>(
     if let Some(true) = should_continue {
         *file_name = draw_input_prompt(
             terminal,
-            &[Spans::from(
+            &[Line::from(
                 "Enter exported certificate name (e.g. name.certificate.pgp):",
             )],
             true,
@@ -285,16 +283,16 @@ pub fn split_users_tui<B: Backend>(
             })
             .collect();
 
-        cert_manager.split_users(cert_path, &file_name, selected_users.clone())?;
+        cert_manager.split_users(cert_path, file_name, selected_users.clone())?;
     }
 
     Ok(())
 }
 
-pub fn revoke<B: Backend>(
+pub fn revoke(
     cert_manager: &CertificateManager,
-    terminal: &mut Terminal<B>,
-    certificate: &String,
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+    certificate: &str,
     original_pw: &mut String,
     revocation_reason: &mut String,
     revocation_path: &mut String,
@@ -308,27 +306,27 @@ pub fn revoke<B: Backend>(
         "    (3) Key material has been compromised",
     ];
 
-    let revocation_reason_spans: Vec<Spans> = prompt_revocation_reason
+    let revocation_reason_spans: Vec<Line> = prompt_revocation_reason
         .into_iter()
-        .map(|line| Spans::from(Span::styled(line, style)))
+        .map(|line| Line::from(Span::styled(line, style)))
         .collect();
 
-    let key = Cert::from_reader(BufReader::new(File::open(&certificate)?))?;
+    let key = Cert::from_reader(BufReader::new(File::open(certificate)?))?;
     if !key.is_tsk() {
         *revocation_path = draw_input_prompt(
             terminal,
-            &[Spans::from("Enter revocation certificate path:")],
+            &[Line::from("Enter revocation certificate path:")],
             true,
         )?;
         cert_manager.revoke_certificate(certificate, revocation_path)?;
     } else {
         let secret = key.primary_key().key().clone().parts_into_secret()?;
-        *original_pw = draw_input_prompt(terminal, &[Spans::from("Enter key secret")], false)?;
+        *original_pw = draw_input_prompt(terminal, &[Line::from("Enter key secret")], false)?;
         let original_pw = Password::from(original_pw.clone());
         match secret.decrypt_secret(&original_pw) {
             Ok(_) => {
                 *revocation_reason = draw_input_prompt(terminal, &revocation_reason_spans, true)?;
-                cert_manager.revoke_key(certificate, &original_pw, &revocation_reason)?
+                cert_manager.revoke_key(certificate, &original_pw, revocation_reason)?
             }
             Err(_) => {
                 return Err(anyhow::anyhow!("Wrong password!"));

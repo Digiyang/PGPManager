@@ -6,7 +6,7 @@
 version: 2
 updates:
   - package-ecosystem: "cargo"
-    directory: "/gui"
+    directory: "/"
     schedule:
       interval: "daily"
     # Include a list of updated dependencies

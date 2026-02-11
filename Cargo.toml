@@ -1,0 +1,15 @@
+[package]
+name = "pgpmanager"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+chrono = "0.4"
+crossterm = "0.28"
+sequoia-openpgp = "1.20"
+home = "0.5"
+ratatui = "0.28"
+
+[dev-dependencies]
+tempfile = "3.8"

@@ -1,22 +1,18 @@
 # PGPManager
 ![](banner.jpg)
 
+[![CI](https://github.com/Digiyang/PGPManager/actions/workflows/ci.yml/badge.svg)](https://github.com/Digiyang/PGPManager/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![GitHub issues](https://img.shields.io/github/issues/Digiyang/PGPManager.svg)](https://github.com/Digiyang/PGPManager/issues)
-<!-- [![GitHub stars](https://img.shields.io/github/stars/Digiyang/PGPManager.svg)] (https://github.com/Digiyang/PGPManager/stargazers) -->
-<!-- [![GitHub forks](https://img.shields.io/github/forks/Digiyang/PGPManager.svg)](https://github.com/Digiyang/PGPManager/network) -->
 
 PGPmanager is a Terminal User Interface (TUI) designed to facilitate and manage the process of PGP (Pretty Good Privacy) key management.
 
-<!-- Anyone checking this out and who would be qualify to use it, will know what PGP is, so lets get straight to the point. -->
-<!-- PGP is a widely-used encryption standard that allows users to secure their communication and data by encrypting messages and files with public and private keys. -->
 The primary purpose of PGPmanager is to provide an intuitive and interactive interface for users to perform various PGP key operations, such as:
-<!-- created a list, as this text got very long. As this is repetitive because of the feature section below, you might just take it out? -->
-- generating key pairs 
-- exporting and importing certificates 
+- generating key pairs
+- exporting and importing certificates
 - editing passwords and expiration times
-- revoking keys 
-- and more 
+- revoking keys
+- and more
 
 The application serves as a bridge between the user and the underlying functionality provided by the [Sequoia-OpenPGP](https://sequoia-pgp.org/) crate, a powerful library for PGP key management in Rust.
 
@@ -24,7 +20,7 @@ The application serves as a bridge between the user and the underlying functiona
 
 ## Releases
 
-PGPManager is currently in its *Alpha* stage. 
+PGPManager is currently in its *Alpha* stage.
 
 ### Release Notes
 This tool was developed as part of a bachelor thesis and my first project written in [Rust](https://www.rust-lang.org/), leveraging [PGP](https://www.openpgp.org/). As such, it may have security flaws, bugs or contain boilerplate code. Reviews, critiques, and contributions are highly appreciated.
@@ -41,8 +37,7 @@ I plan to release stable versions on popular package managers like Cargo, Homebr
 - Edit key passwords and expiration times
 - Add/Delete users
 - Revoke keys
-<!-- user can .... for each user -- is unclear who user is, --better?: contact, recipient -->
-- Users can choose to extract a public key for each user and with the same private key 
+- Extract a public key for each user with the same private key
 - User-friendly and robust interface.
 
 ---
@@ -50,25 +45,17 @@ I plan to release stable versions on popular package managers like Cargo, Homebr
 ## Table of Contents
 
 - [PGPManager](#pgpmanager)
-  - [Future Releases](#future-releases)
+  - [Releases](#releases)
   - [Features](#features)
   - [Table of Contents](#table-of-contents)
-  - [Getting Started](#getting-started)
   - [Installation](#installation)
     - [Prerequisites](#prerequisites)
     - [Installation Steps](#installation-steps)
   - [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
-- [Copyright](#copyright)
-
----
-
-## Getting Started
-
-<!-- does this section need to be here? It doesnt contribute a significant information -->
-To get started with PGPManager, follow the installation instructions below.
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Contact](#contact)
+  - [Copyright](#copyright)
 
 ---
 
@@ -80,12 +67,11 @@ Before you can run the Terminal User Interface, you must first ensure that your 
 
 1. Rust programming language:
 
-The TUI is written in Rust, so Rustup, the installation and version management program for Rust, is required. If Rust is not installed on your system, please visit [the official Rust website](https://www.rust-lang.org/). for installation instructions.
+The TUI is written in Rust, so Rustup, the installation and version management program for Rust, is required. If Rust is not installed on your system, please visit [the official Rust website](https://www.rust-lang.org/) for installation instructions.
 
 1. Sequoia OpenPGP Crate:
 
-The TUI relies on the Sequoia OpenPGP crates for certificate management. You must have certain dependencies installed in your system. Visit [the Sequoia repository](https://gitlab.com/sequoia-pgp/sequoia) for detailed instructions on the required libraries for different
-different platforms
+The TUI relies on the Sequoia OpenPGP crates for certificate management. You must have certain dependencies installed in your system. Visit [the Sequoia repository](https://gitlab.com/sequoia-pgp/sequoia) for detailed instructions on the required libraries for different platforms.
 
 ### Installation Steps
 
@@ -98,7 +84,7 @@ different platforms
 2. Change to the project directory:
 
    ```bash
-   cd gui
+   cd PGPManager
    ```
 
 3. Build the application:
@@ -132,21 +118,19 @@ different platforms
 
 ---
 
-# Contributing
+## Contributing
 Contributions are welcome! Feel free to open [issues](https://github.com/Digiyang/PGPManager/issues) for any improvements or bug fixes.
 
 ---
 
-# License
+## License
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-# Contact
-<!-- dude, you re handling pgp and not providing a pgp key? :D -->
+## Contact
 - Email: [moez@rjiba.de](mailto:moez@rjiba.de) | [PK](https://keys.openpgp.org/vks/v1/by-fingerprint/DBCFECCE54271ACE2AAF80268DD7310FF3E0913F)
 - LinkedIn: [Moez Rjiba](https://www.linkedin.com/in/moez-rjiba-1a3ab21a2/)
-<!-- allthough here on github, they will be on your profile right? -->
 
-# Copyright
-Copyright © 2023, [Moez Rjiba](rjiba.de). All rights reserved.
+## Copyright
+Copyright © 2025, [Moez Rjiba](https://rjiba.de). All rights reserved.

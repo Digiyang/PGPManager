@@ -14,8 +14,6 @@ use openpgp::{Cert, Packet, PacketPile};
 
 use sequoia_openpgp as openpgp;
 
-use std::time;
-
 use std::{fs::File, io::BufReader, time::SystemTime as StdTime};
 
 use crate::app::launch::clear_screen;
@@ -74,8 +72,8 @@ impl CertificateManager {
     pub fn execute(
         &self,
         operation: CertificateOperation,
-        cert_path: Option<&String>,
-        file_name: Option<&String>,
+        cert_path: Option<&str>,
+        file_name: Option<&str>,
     ) -> Result<CertificateOperationOutput, anyhow::Error> {
         match operation {
             CertificateOperation::GetCertificateDetails => {
@@ -107,13 +105,9 @@ impl CertificateManager {
                 cipher,
                 pw,
                 rpw,
-            } => Ok(CertificateOperationOutput::Result(self.generate_keypair(
-                user_id,
-                validity,
-                cipher,
-                pw.into(),
-                rpw.into(),
-            ))),
+            } => Ok(CertificateOperationOutput::Result(
+                self.generate_keypair(user_id, validity, cipher, pw, rpw),
+            )),
             CertificateOperation::ExportCertificate => {
                 if let Some(cert_path) = cert_path {
                     if let Some(file_name) = file_name {
@@ -228,16 +222,15 @@ impl CertificateManager {
         }
     }
 
-    fn get_key_details(&self, cert_path: &String) -> Result<String, anyhow::Error> {
-        cert_path.trim().to_string();
+    fn get_key_details(&self, cert_path: &str) -> Result<String, anyhow::Error> {
         let cert = Cert::from_reader(BufReader::new(File::open(cert_path)?))?;
         let mut key_details = String::new();
 
         // check if public key or secret key
         if cert.is_tsk() {
-            key_details.push_str(&format!("\nThis is a Secret key\n"));
+            key_details.push_str("\nThis is a Secret key\n");
         } else {
-            key_details.push_str(&format!("\nThis is a Public key\n"));
+            key_details.push_str("\nThis is a Public key\n");
         }
 
         // key decryption
@@ -277,7 +270,7 @@ impl CertificateManager {
         let p = &StandardPolicy::new();
         match cert.revocation_status(p, None) {
             Revoked(sigs) => {
-                key_details.push_str(&format!("\nRevocation status: Revoked"));
+                key_details.push_str("\nRevocation status: Revoked");
                 for sig in sigs {
                     if let Some((r, msg)) = sig.reason_for_revocation() {
                         key_details.push_str(&format!("\n                    -{}", r));
@@ -306,7 +299,7 @@ impl CertificateManager {
                 }
             }
             CouldBe(sigs) => {
-                key_details.push_str(&format!("\nRevocation status: Possibly revoked:"));
+                key_details.push_str("\nRevocation status: Possibly revoked:");
                 for sig in sigs {
                     if let Some((r, msg)) = sig.reason_for_revocation() {
                         key_details.push_str(&format!("\n                    -{}", r));
@@ -335,7 +328,7 @@ impl CertificateManager {
                 }
             }
             NotAsFarAsWeKnow => {
-                key_details.push_str(&format!("\nRevocation status: Not as far as we know"));
+                key_details.push_str("\nRevocation status: Not as far as we know");
             }
         }
 
@@ -391,7 +384,7 @@ impl CertificateManager {
                 ));
             }
             // 8-check capabilities
-            key_details.push_str(&format!("\nCapabilities:"));
+            key_details.push_str("\nCapabilities:");
             //writeln!(output, "\nCapabilities:")?;
             if let Some(flags) = vka.key_flags() {
                 let mut capabilities = Vec::new();
@@ -421,7 +414,7 @@ impl CertificateManager {
                 if !capabilities.is_empty() {
                     key_details.push_str(&format!("\n{}", capabilities.join("\n")));
                 } else {
-                    key_details.push_str(&format!("\nNo capabilities!"));
+                    key_details.push_str("\nNo capabilities!");
                 }
             }
         };
@@ -438,7 +431,7 @@ impl CertificateManager {
         Ok(key_details)
     }
 
-    fn get_signature_details(&self, signature_path: &String) -> Result<String, anyhow::Error> {
+    fn get_signature_details(&self, signature_path: &str) -> Result<String, anyhow::Error> {
         let mut revocation_details = String::new();
 
         let file = File::open(signature_path).context("Failed to open the file")?;
@@ -544,20 +537,17 @@ impl CertificateManager {
 
         // Note: certificate on the context of the sequoia openpgp crate means the public key that can be shared
         let home_dir = home::home_dir().unwrap();
-        let key_path = String::from(
-            format!("{}/.pgpman/secrets/{}.pgp", &home_dir.display(), uid_clone).replace(" ", ""),
-        );
-        let revcert_path = String::from(
-            format!(
-                "{}/.pgpman/revocation/{}.rev",
-                &home_dir.display(),
-                uid_clone
-            )
-            .replace(" ", ""),
-        );
+        let key_path =
+            format!("{}/.pgpman/secrets/{}.pgp", &home_dir.display(), uid_clone).replace(" ", "");
+        let revcert_path = format!(
+            "{}/.pgpman/revocation/{}.rev",
+            &home_dir.display(),
+            uid_clone
+        )
+        .replace(" ", "");
         // export key to path
         {
-            if let Some(w) = create_file(Some(&key_path.as_str())).unwrap() {
+            if let Some(w) = create_file(Some(key_path.as_str())).unwrap() {
                 let mut w = Writer::new(w, Kind::SecretKey)?;
                 key.as_tsk().serialize(&mut w)?;
                 w.finalize()?;
@@ -566,10 +556,23 @@ impl CertificateManager {
 
         // export revocation certificate to path
         {
-            if let Some(w) = create_file(Some(&revcert_path.as_str())).unwrap() {
+            if let Some(w) = create_file(Some(revcert_path.as_str())).unwrap() {
                 let mut w = Writer::new(w, Kind::Signature)?;
                 Packet::Signature(revocation_cert).serialize(&mut w)?;
                 w.finalize()?;
+            }
+        }
+
+        // export public certificate to path
+        let cert_path = format!(
+            "{}/.pgpman/certificates/{}.pgp",
+            &home_dir.display(),
+            uid_clone
+        )
+        .replace(" ", "");
+        {
+            if let Some(mut w) = create_file(Some(cert_path.as_str())).unwrap() {
+                key.armored().serialize(&mut w)?;
             }
         }
 
@@ -578,18 +581,18 @@ impl CertificateManager {
 
     pub fn export_certificate(
         &self,
-        cert_path: &String,
-        ex_file_name: &String,
+        cert_path: &str,
+        ex_file_name: &str,
     ) -> Result<(), anyhow::Error> {
         let cert = Cert::from_reader(BufReader::new(File::open(cert_path)?))?;
 
         let home_dir = home::home_dir().unwrap();
-        let export_path = String::from(format!(
+        let export_path = format!(
             "{}/.pgpman/certificates/{}",
             &home_dir.display(),
             ex_file_name
-        ));
-        if let Some(mut out_cert) = create_file(Some(&export_path.as_str()))? {
+        );
+        if let Some(mut out_cert) = create_file(Some(export_path.as_str()))? {
             cert.armored().serialize(&mut out_cert)?;
         }
 
@@ -598,16 +601,16 @@ impl CertificateManager {
 
     pub fn edit_password(
         &self,
-        secret_key: &String,
+        secret_key: &str,
         original: &Password,
         npw: String,
         rnpw: String,
     ) -> Result<(), anyhow::Error> {
-        let mut key = Cert::from_reader(BufReader::new(File::open(&secret_key)?))?;
+        let mut key = Cert::from_reader(BufReader::new(File::open(secret_key)?))?;
 
         // decrypt secret first
         let secret = key.primary_key().key().clone().parts_into_secret()?;
-        let dec = secret.decrypt_secret(&original)?;
+        let dec = secret.decrypt_secret(original)?;
         key = key.insert_packets(dec)?;
         if npw == rnpw {
             let enc = key
@@ -618,7 +621,7 @@ impl CertificateManager {
                 .encrypt_secret(&rnpw.into())?;
             key = key.insert_packets(enc)?;
 
-            if let Some(mut out) = create_file(Some(&secret_key))? {
+            if let Some(mut out) = create_file(Some(secret_key))? {
                 key.as_tsk().armored().serialize(&mut out)?;
             }
         }
@@ -627,25 +630,25 @@ impl CertificateManager {
 
     pub fn edit_expiration_time(
         &self,
-        cert_path: &String,
+        cert_path: &str,
         original: &Password,
         validity: String,
     ) -> Result<(), anyhow::Error> {
-        let cert = Cert::from_reader(BufReader::new(File::open(&cert_path)?))?;
+        let cert = Cert::from_reader(BufReader::new(File::open(cert_path)?))?;
         let p = &StandardPolicy::new();
         let vc = cert.with_policy(p, None)?;
         let sig;
 
         let secret = vc.primary_key().key().clone().parts_into_secret()?;
-        let mut keypair = secret.decrypt_secret(&original)?.into_keypair()?;
+        let mut keypair = secret.decrypt_secret(original)?.into_keypair()?;
 
         match validity.as_str() {
             "0" | "" => {
                 sig = vc.primary_key().set_expiration_time(&mut keypair, None)?;
             }
             _ => {
-                let duration = parse_iso8601_duration(&validity.as_str()).unwrap();
-                let t = time::SystemTime::now() + duration;
+                let duration = parse_iso8601_duration(validity.as_str()).unwrap();
+                let t = StdTime::now() + duration;
                 sig = vc
                     .primary_key()
                     .set_expiration_time(&mut keypair, Some(t))?;
@@ -653,7 +656,7 @@ impl CertificateManager {
         }
 
         let cert = cert.insert_packets(sig)?;
-        if let Some(mut out_cert) = create_file(Some(&cert_path))? {
+        if let Some(mut out_cert) = create_file(Some(cert_path))? {
             cert.as_tsk().armored().serialize(&mut out_cert)?;
         }
 
@@ -662,11 +665,11 @@ impl CertificateManager {
 
     pub fn add_user(
         &self,
-        cert_path: &String,
+        cert_path: &str,
         original: &Password,
         new_userid: String,
     ) -> Result<(), anyhow::Error> {
-        let mut key = Cert::from_reader(BufReader::new(File::open(&cert_path)?))?;
+        let mut key = Cert::from_reader(BufReader::new(File::open(cert_path)?))?;
 
         // always check if it's a secret key
         if !key.is_tsk() {
@@ -676,7 +679,7 @@ impl CertificateManager {
         // decrypt secret
         let secret = key.primary_key().key().clone().parts_into_secret()?;
 
-        let mut keypair = secret.decrypt_secret(&original)?.into_keypair()?;
+        let mut keypair = secret.decrypt_secret(original)?.into_keypair()?;
         let new_userid = UserID::from(new_userid);
         let builder = signature::SignatureBuilder::new(SignatureType::PositiveCertification);
         let binding = new_userid.bind(&mut keypair, &key, builder)?;
@@ -684,7 +687,7 @@ impl CertificateManager {
         // Now merge the User ID and binding signature into the Cert.
         key = key.insert_packets(vec![Packet::from(new_userid), binding.into()])?;
 
-        if let Some(mut out) = create_file(Some(&cert_path))? {
+        if let Some(mut out) = create_file(Some(cert_path))? {
             key.as_tsk().armored().serialize(&mut out)?;
         }
 
@@ -693,8 +696,8 @@ impl CertificateManager {
 
     pub fn split_users(
         &self,
-        cert_path: &String,
-        new_cert_name: &String,
+        cert_path: &str,
+        new_cert_name: &str,
         selected_users: Vec<String>,
     ) -> Result<(), anyhow::Error> {
         /*
@@ -708,20 +711,20 @@ impl CertificateManager {
         */
         let cert = Cert::from_reader(BufReader::new(File::open(cert_path)?))?;
         let home_dir = home::home_dir().unwrap();
-        let export_path = String::from(format!(
+        let export_path = format!(
             "{}/.pgpman/certificates/{}",
             &home_dir.display(),
             new_cert_name
-        ));
+        );
 
         let cp = cert.clone().retain_userids(|ua| {
-            if let Ok(Some(address)) = ua.email() {
-                selected_users.contains(&address)
+            if let Ok(Some(address)) = ua.email2() {
+                selected_users.iter().any(|u| u == address)
             } else {
                 true
             }
         });
-        if let Some(mut out_cert) = create_file(Some(&export_path.as_str()))? {
+        if let Some(mut out_cert) = create_file(Some(export_path.as_str()))? {
             cp.serialize(&mut out_cert).unwrap();
         }
 
@@ -730,18 +733,18 @@ impl CertificateManager {
 
     pub fn revoke_key(
         &self,
-        cert_path: &String,
+        cert_path: &str,
         original: &Password,
-        reason: &String,
+        reason: &str,
     ) -> Result<(), anyhow::Error> {
-        let key = Cert::from_reader(BufReader::new(File::open(&cert_path)?))?;
+        let key = Cert::from_reader(BufReader::new(File::open(cert_path)?))?;
         let rev: Signature;
 
         let secret = key.primary_key().key().clone().parts_into_secret()?;
 
-        let mut signer = secret.decrypt_secret(&original)?.into_keypair()?;
+        let mut signer = secret.decrypt_secret(original)?.into_keypair()?;
 
-        match reason.as_str() {
+        match reason {
             "1" => {
                 rev = key.revoke(
                     &mut signer,
@@ -773,21 +776,17 @@ impl CertificateManager {
         }
 
         let key = key.insert_packets(rev)?;
-        if let Some(mut out) = create_file(Some(&cert_path))? {
+        if let Some(mut out) = create_file(Some(cert_path))? {
             key.as_tsk().armored().serialize(&mut out)?;
         }
 
         Ok(())
     }
 
-    pub fn revoke_certificate(
-        &self,
-        cert_path: &String,
-        rev_cert: &String,
-    ) -> Result<(), anyhow::Error> {
-        let cert = Cert::from_reader(BufReader::new(File::open(&cert_path).unwrap())).unwrap();
+    pub fn revoke_certificate(&self, cert_path: &str, rev_cert: &str) -> Result<(), anyhow::Error> {
+        let cert = Cert::from_reader(BufReader::new(File::open(cert_path).unwrap())).unwrap();
 
-        let pile = PacketPile::from_reader(BufReader::new(File::open(&rev_cert).unwrap()))?;
+        let pile = PacketPile::from_reader(BufReader::new(File::open(rev_cert).unwrap()))?;
         // extract packets from the revocation certificate
         let packets: Vec<Packet> = pile.into();
 
@@ -818,7 +817,7 @@ impl CertificateManager {
 
         let cert = cert.insert_packets(packets.into_iter())?;
 
-        if let Some(mut out) = create_file(Some(&cert_path))? {
+        if let Some(mut out) = create_file(Some(cert_path))? {
             cert.armored().serialize(&mut out)?;
         }
 

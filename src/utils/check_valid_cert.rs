@@ -7,8 +7,8 @@ use std::io::BufReader;
 use std::path::Path;
 
 pub enum CertificateType {
-    Cert(Cert),
-    Sig(Signature),
+    Cert(Box<Cert>),
+    Sig(Box<Signature>),
     Invalid,
 }
 
@@ -56,13 +56,13 @@ pub fn check_certificate(cert_path: &Path) -> CertificateType {
                 .collect::<Vec<Packet>>()
                 .into_iter(),
         ) {
-            Ok(cert) => return CertificateType::Cert(cert),
-            Err(_) => return CertificateType::Invalid,
+            Ok(cert) => CertificateType::Cert(Box::new(cert)),
+            Err(_) => CertificateType::Invalid,
         }
     } else {
         // If we didn't find a key packet, it must be a standalone signature.
         match signature {
-            Some(sig) => CertificateType::Sig(sig),
+            Some(sig) => CertificateType::Sig(Box::new(sig)),
             None => CertificateType::Invalid, // No signature found at all.
         }
     }

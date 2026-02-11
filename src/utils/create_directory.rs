@@ -9,15 +9,15 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use tui::{backend::CrosstermBackend, text::Spans, Terminal};
+use ratatui::{backend::CrosstermBackend, text::Line, Terminal};
 
 use crate::app::ui::{draw_input_prompt, show_input_popup};
 
 fn create_directory(
-    path: &PathBuf,
-    secret_key_path: &PathBuf,
-    cert_path: &PathBuf,
-    rev_path: &PathBuf,
+    path: &Path,
+    secret_key_path: &Path,
+    cert_path: &Path,
+    rev_path: &Path,
 ) -> std::io::Result<()> {
     fs::create_dir_all(path)?;
     fs::create_dir_all(secret_key_path)?;
@@ -48,7 +48,7 @@ pub fn create_file(
 
     match f {
         None => Ok(Some(Box::new(io::stdout()))),
-        Some(p) if p == "-" => Ok(Some(Box::new(io::stdout()))),
+        Some("-") => Ok(Some(Box::new(io::stdout()))),
         Some(f) => {
             let p = Path::new(f);
             if !p.exists() {
@@ -62,7 +62,7 @@ pub fn create_file(
             } else {
                 let should_override = draw_input_prompt(
                     &mut terminal,
-                    &[Spans::from(
+                    &[Line::from(
                         format!("File {:?} already exists! Override? (y/N)", p).as_str(),
                     )],
                     true,

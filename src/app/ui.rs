@@ -1,9 +1,8 @@
 use crossterm::event::{self, Event, KeyCode};
-use tui::{
-    backend::Backend,
+use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::{Span, Spans, Text},
+    text::{Line, Span, Text},
     widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph, Wrap},
     Frame, Terminal,
 };
@@ -13,7 +12,7 @@ use crate::widgets::list::StatefulList;
 use super::app::App;
 
 // todo: move the functions to a separate files to make the code more readable widgets folder
-pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+pub fn ui(f: &mut Frame, app: &mut App) {
     if app.help_active {
         draw_help(f, app);
     } else {
@@ -48,15 +47,15 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         .split(popup_layout[1])[1]
 }
 
-fn details_popup<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+fn details_popup(f: &mut Frame, app: &mut App) {
     if let Some(details) = &app.key_details {
-        let popup_area = centered_rect(40, 60, f.size());
-        let content: Vec<Spans> = details
+        let popup_area = centered_rect(40, 60, f.area());
+        let content: Vec<Line> = details
             .lines()
             .enumerate()
             .map(|(i, line)| {
                 if i == app.scroll_state {
-                    Spans::from(Span::styled(
+                    Line::from(Span::styled(
                         line,
                         Style::default()
                             .add_modifier(Modifier::BOLD)
@@ -64,7 +63,7 @@ fn details_popup<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                             .bg(Color::Yellow),
                     ))
                 } else {
-                    Spans::from(Span::styled(line, Style::default().fg(Color::White)))
+                    Line::from(Span::styled(line, Style::default().fg(Color::White)))
                 }
             })
             .collect();
@@ -83,7 +82,7 @@ fn details_popup<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     }
 }
 
-fn main_window<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+fn main_window(f: &mut Frame, app: &mut App) {
     let selected_file = app.items.state.selected().unwrap_or(0);
     // Create three chunks
     let chunks = Layout::default()
@@ -97,7 +96,7 @@ fn main_window<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             ]
             .as_ref(),
         )
-        .split(f.size());
+        .split(f.area());
 
     let help_text = "Help: Press 'q' to quit, 'Enter' to select a directory, 'Space bar' to go back and 'h' to show the help menu.";
     let help_paragraph = Paragraph::new(Text::styled(help_text, Style::default().fg(Color::White)))
@@ -117,9 +116,9 @@ fn main_window<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .map(|i| {
             let file_name = i
                 .split('/') // Replace with '\\' on Windows
-                .last()
+                .next_back()
                 .unwrap_or(i);
-            let lines = vec![Spans::from(file_name)];
+            let lines = vec![Line::from(file_name)];
             ListItem::new(lines).style(Style::default().fg(Color::White))
         })
         .collect();
@@ -168,9 +167,9 @@ fn main_window<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     f.render_widget(current_file_widget, chunks[2]);
 }
 
-pub fn draw_input_prompt<B: Backend>(
-    terminal: &mut Terminal<B>,
-    prompt: &[Spans],
+pub fn draw_input_prompt(
+    terminal: &mut Terminal<ratatui::backend::CrosstermBackend<std::io::Stdout>>,
+    prompt: &[Line],
     display_input: bool,
 ) -> Result<String, anyhow::Error> {
     let mut input = String::new();
@@ -180,8 +179,8 @@ pub fn draw_input_prompt<B: Backend>(
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .margin(2)
-                .constraints([Constraint::Percentage(0), Constraint::Length(3)].as_ref())
-                .split(f.size());
+                .constraints([Constraint::Length(0), Constraint::Min(3)].as_ref())
+                .split(f.area());
 
             let input_text = if display_input {
                 input.clone()
@@ -198,9 +197,9 @@ pub fn draw_input_prompt<B: Backend>(
 
             let prompt_text = prompt
                 .iter()
-                .map(|spans| spans.clone())
-                .chain(std::iter::once(Spans::from(input_span)))
-                .collect::<Vec<Spans>>();
+                .cloned()
+                .chain(std::iter::once(Line::from(input_span)))
+                .collect::<Vec<Line>>();
 
             let input_widget = Paragraph::new(prompt_text)
                 .block(
@@ -215,7 +214,7 @@ pub fn draw_input_prompt<B: Backend>(
                 )
                 .wrap(Wrap { trim: true });
 
-            f.render_widget(Clear, f.size());
+            f.render_widget(Clear, f.area());
             f.render_widget(input_widget, chunks[1]);
         })?;
 
@@ -241,21 +240,21 @@ pub fn draw_input_prompt<B: Backend>(
     Ok(input)
 }
 
-pub fn show_input_popup<B: Backend>(
-    terminal: &mut Terminal<B>,
+pub fn show_input_popup(
+    terminal: &mut Terminal<ratatui::backend::CrosstermBackend<std::io::Stdout>>,
     message: &str,
 ) -> Result<(), anyhow::Error> {
     let popup = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Yellow));
 
-    let text = Text::from(Spans::from(Span::styled(
+    let text = Text::from(Line::from(Span::styled(
         message,
         Style::default().fg(Color::White),
     )));
 
     terminal.draw(|f| {
-        let rect = centered_rect(30, 20, f.size());
+        let rect = centered_rect(30, 20, f.area());
         let inner_rect = Rect::new(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2);
         f.render_widget(Clear, rect);
         f.render_widget(popup, rect);
@@ -273,14 +272,14 @@ pub fn show_input_popup<B: Backend>(
     Ok(())
 }
 
-pub fn show_user_selection_popup<B: Backend>(
-    terminal: &mut Terminal<B>,
+pub fn show_user_selection_popup(
+    terminal: &mut Terminal<ratatui::backend::CrosstermBackend<std::io::Stdout>>,
     users: &mut StatefulList<String>,
-    selected_items: &mut Vec<bool>,
+    selected_items: &mut [bool],
 ) -> Result<Option<bool>, anyhow::Error> {
     loop {
         terminal.draw(|f| {
-            let popup_area = centered_rect(60, 60, f.size());
+            let popup_area = centered_rect(60, 60, f.area());
             let block = Block::default()
                 .title("User Selection")
                 .borders(Borders::ALL)
@@ -301,7 +300,7 @@ pub fn show_user_selection_popup<B: Backend>(
                         Style::default().fg(Color::White),
                     )
                 };
-                lines.push(Spans::from(user_span));
+                lines.push(Line::from(user_span));
             }
 
             let paragraph = Paragraph::new(lines)
@@ -339,12 +338,12 @@ pub fn show_user_selection_popup<B: Backend>(
     //Ok(None)
 }
 
-fn draw_help<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+fn draw_help(f: &mut Frame, app: &mut App) {
     let main_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .margin(1)
         .constraints([Constraint::Percentage(60), Constraint::Percentage(40)].as_ref())
-        .split(f.size());
+        .split(f.area());
 
     let left_chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -362,7 +361,7 @@ fn draw_help<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(Spans::from(vec![Span::styled(
+                .title(Line::from(vec![Span::styled(
                     "Help",
                     Style::default().fg(Color::Yellow),
                 )])),
@@ -381,13 +380,13 @@ fn draw_help<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 .unwrap_or(&String::new())
                 .clone()
         })
-        .unwrap_or_else(|| String::new());
+        .unwrap_or_default();
 
     let help_description = Paragraph::new(selected_help_text.as_str())
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(Spans::from(vec![Span::styled(
+                .title(Line::from(vec![Span::styled(
                     "Command description",
                     Style::default().fg(Color::Yellow),
                 )])),

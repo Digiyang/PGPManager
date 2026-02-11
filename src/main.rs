@@ -5,14 +5,14 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use gui::{
+use pgpmanager::{
     app::{
         app::App,
         launch::{clear_screen, run_app},
     },
     utils::{create_directory::init_directory, list_directory_content::list_directory_contents},
 };
-use tui::{backend::CrosstermBackend, Terminal};
+use ratatui::{backend::CrosstermBackend, Terminal};
 
 fn main() -> Result<(), Box<dyn Error>> {
     init_directory()?;
