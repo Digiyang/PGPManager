@@ -9,7 +9,7 @@ pub fn extract_users_from_certificate(cert_path: &Path) -> Result<Vec<String>, a
         return Err(anyhow::anyhow!("Not a certificate!"));
     } else {
         for ua in cert.userids() {
-            if let Ok(Some(address)) = ua.email2() {
+            if let Ok(Some(address)) = ua.component().email() {
                 users.push(address.to_string());
             }
         }

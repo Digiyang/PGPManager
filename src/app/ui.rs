@@ -73,7 +73,10 @@ fn details_popup(f: &mut Frame, app: &mut App) {
             Paragraph::new(content)
                 .block(
                     Block::default()
-                        .title(Span::styled("Details", Style::default().fg(Color::Yellow)))
+                        .title(Line::from(Span::styled(
+                            "Details",
+                            Style::default().fg(Color::Yellow),
+                        )))
                         .borders(Borders::ALL),
                 )
                 .scroll((app.scroll_state.try_into().unwrap(), 0)),
@@ -101,11 +104,14 @@ fn main_window(f: &mut Frame, app: &mut App) {
     let help_text = "Help: Press 'q' to quit, 'Enter' to select a directory, 'Space bar' to go back and 'h' to show the help menu.";
     let help_paragraph = Paragraph::new(Text::styled(help_text, Style::default().fg(Color::White)))
         .block(
-            Block::default().title("Help").borders(Borders::ALL).style(
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
-            ),
+            Block::default()
+                .title(Line::from("Help"))
+                .borders(Borders::ALL)
+                .style(
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ),
         );
     f.render_widget(help_paragraph, chunks[0]);
 
@@ -128,7 +134,7 @@ fn main_window(f: &mut Frame, app: &mut App) {
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Directories")
+                .title(Line::from("Directories"))
                 .style(
                     Style::default()
                         .fg(Color::Yellow)
@@ -140,7 +146,7 @@ fn main_window(f: &mut Frame, app: &mut App) {
                 .bg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         )
-        .highlight_symbol(">> ");
+        .highlight_symbol(Line::from(">> "));
     // We can now render the item list
     f.render_stateful_widget(items, chunks[1], &mut app.items.state);
     let selected_file_name = app
@@ -156,7 +162,7 @@ fn main_window(f: &mut Frame, app: &mut App) {
     ))
     .block(
         Block::default()
-            .title("Current File")
+            .title(Line::from("Current File"))
             .borders(Borders::ALL)
             .style(
                 Style::default()
@@ -205,7 +211,7 @@ pub fn draw_input_prompt(
                 .block(
                     Block::default()
                         .borders(Borders::ALL)
-                        .title("User Input")
+                        .title(Line::from("User Input"))
                         .style(
                             Style::default()
                                 .fg(Color::Yellow)
@@ -281,7 +287,7 @@ pub fn show_user_selection_popup(
         terminal.draw(|f| {
             let popup_area = centered_rect(60, 60, f.area());
             let block = Block::default()
-                .title("User Selection")
+                .title(Line::from("User Selection"))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .style(Style::default().add_modifier(Modifier::BOLD));
@@ -367,7 +373,7 @@ fn draw_help(f: &mut Frame, app: &mut App) {
                 )])),
         )
         .highlight_style(Style::default().bg(Color::Yellow).fg(Color::Black))
-        .highlight_symbol("> ");
+        .highlight_symbol(Line::from("> "));
 
     f.render_stateful_widget(help_list, left_chunks[0], &mut app.help_items.state);
 
@@ -417,7 +423,10 @@ fn draw_help(f: &mut Frame, app: &mut App) {
     ))
     .block(
         Block::default()
-            .title(Span::styled("Banner", Style::default().fg(Color::Yellow)))
+            .title(Line::from(Span::styled(
+                "Banner",
+                Style::default().fg(Color::Yellow),
+            )))
             .borders(Borders::ALL),
     );
     f.render_widget(banner_widget, right_chunks[0]);
@@ -425,7 +434,7 @@ fn draw_help(f: &mut Frame, app: &mut App) {
     let contact_text = "\
 Contact Information:
 Name: Moez Rjiba
-Email: Zeom@proton.me
+Email: moez@rjiba.de
 Website: https://github.com/Digiyang";
 
     let contact_widget = Paragraph::new(Text::styled(
@@ -434,7 +443,10 @@ Website: https://github.com/Digiyang";
     ))
     .block(
         Block::default()
-            .title(Span::styled("Contact", Style::default().fg(Color::Yellow)))
+            .title(Line::from(Span::styled(
+                "Contact",
+                Style::default().fg(Color::Yellow),
+            )))
             .borders(Borders::ALL),
     );
     f.render_widget(contact_widget, right_chunks[1]);

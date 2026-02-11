@@ -238,7 +238,7 @@ impl CertificateManager {
         for ua in cert.userids() {
             key_details.push_str(&format!(
                 "\nUser-ID:      {}",
-                String::from_utf8_lossy(ua.value())
+                String::from_utf8_lossy(ua.component().value())
             ));
             for sig in ua.signatures() {
                 let creation_time = sig.signature_creation_time().unwrap();
@@ -259,7 +259,7 @@ impl CertificateManager {
         for u_att in cert.user_attributes() {
             key_details.push_str(&format!(
                 "\nUser attributes: {}",
-                String::from_utf8_lossy(u_att.value())
+                String::from_utf8_lossy(u_att.component().value())
             ));
         }
 
@@ -420,9 +420,12 @@ impl CertificateManager {
         };
 
         for sub in cert.keys().subkeys() {
-            key_details.push_str(&format!("\nSubkey fingerprint: {}", sub.fingerprint()));
-            key_details.push_str(&format!("\nSubkey algorithm: {}", sub.pk_algo()));
-            if let Some(bits) = sub.mpis().bits() {
+            key_details.push_str(&format!(
+                "\nSubkey fingerprint: {}",
+                sub.key().fingerprint()
+            ));
+            key_details.push_str(&format!("\nSubkey algorithm: {}", sub.key().pk_algo()));
+            if let Some(bits) = sub.key().mpis().bits() {
                 // return the length of the subkey in bits
                 key_details.push_str(&format!("\nSubkey size: {}", bits));
             }
@@ -611,7 +614,7 @@ impl CertificateManager {
         // decrypt secret first
         let secret = key.primary_key().key().clone().parts_into_secret()?;
         let dec = secret.decrypt_secret(original)?;
-        key = key.insert_packets(dec)?;
+        key = key.insert_packets(dec)?.0;
         if npw == rnpw {
             let enc = key
                 .primary_key()
@@ -619,7 +622,7 @@ impl CertificateManager {
                 .clone()
                 .parts_into_secret()?
                 .encrypt_secret(&rnpw.into())?;
-            key = key.insert_packets(enc)?;
+            key = key.insert_packets(enc)?.0;
 
             if let Some(mut out) = create_file(Some(secret_key))? {
                 key.as_tsk().armored().serialize(&mut out)?;
@@ -655,7 +658,7 @@ impl CertificateManager {
             }
         }
 
-        let cert = cert.insert_packets(sig)?;
+        let (cert, _) = cert.insert_packets(sig)?;
         if let Some(mut out_cert) = create_file(Some(cert_path))? {
             cert.as_tsk().armored().serialize(&mut out_cert)?;
         }
@@ -685,7 +688,9 @@ impl CertificateManager {
         let binding = new_userid.bind(&mut keypair, &key, builder)?;
 
         // Now merge the User ID and binding signature into the Cert.
-        key = key.insert_packets(vec![Packet::from(new_userid), binding.into()])?;
+        key = key
+            .insert_packets(vec![Packet::from(new_userid), binding.into()])?
+            .0;
 
         if let Some(mut out) = create_file(Some(cert_path))? {
             key.as_tsk().armored().serialize(&mut out)?;
@@ -718,7 +723,7 @@ impl CertificateManager {
         );
 
         let cp = cert.clone().retain_userids(|ua| {
-            if let Ok(Some(address)) = ua.email2() {
+            if let Ok(Some(address)) = ua.component().email() {
                 selected_users.iter().any(|u| u == address)
             } else {
                 true
@@ -775,7 +780,7 @@ impl CertificateManager {
             }
         }
 
-        let key = key.insert_packets(rev)?;
+        let (key, _) = key.insert_packets(rev)?;
         if let Some(mut out) = create_file(Some(cert_path))? {
             key.as_tsk().armored().serialize(&mut out)?;
         }
@@ -808,14 +813,14 @@ impl CertificateManager {
         if !cert.keys().any(|key| {
             revcert_issuers
                 .iter()
-                .any(|issuer| *issuer == key.key_handle())
+                .any(|issuer| *issuer == key.key().key_handle())
         }) {
             return Err(anyhow::anyhow!(
                 "Revocation certificate does not match original certificate"
             ));
         }
 
-        let cert = cert.insert_packets(packets.into_iter())?;
+        let (cert, _) = cert.insert_packets(packets.into_iter())?;
 
         if let Some(mut out) = create_file(Some(cert_path))? {
             cert.armored().serialize(&mut out)?;
