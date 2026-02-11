@@ -7,7 +7,7 @@ edition = "2021"
 anyhow = "1.0"
 chrono = "0.4"
 crossterm = "0.28"
-sequoia-openpgp = "1.20"
+sequoia-openpgp = "2.2"
 home = "0.5"
 ratatui = "0.28"
 
