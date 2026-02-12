@@ -142,30 +142,20 @@ pub fn run_app(
                     }
 
                     // generate a new keypair (secret + revocation certificate)
-                    KeyCode::Char('g') => {
-                        match generate_keypair_tui(
-                            &manager,
-                            terminal,
-                            &mut app.uid,
-                            &mut app.validity,
-                            &mut app.cipher,
-                            &mut app.pw,
-                            &mut app.rpw,
-                        ) {
-                            Ok(()) => {
-                                show_input_popup(terminal, "Key pair generated successfully.")?;
-                                app.items = StatefulList::with_items(list_directory_contents(
-                                    &app.current_dir,
-                                )?);
-                            }
-                            Err(e) => {
-                                show_input_popup(
-                                    terminal,
-                                    &format!("Error generating key pair: {}", e),
-                                )?;
-                            }
+                    KeyCode::Char('g') => match generate_keypair_tui(&manager, terminal) {
+                        Ok(()) => {
+                            show_input_popup(terminal, "Key pair generated successfully.")?;
+                            app.items = StatefulList::with_items(list_directory_contents(
+                                &app.current_dir,
+                            )?);
                         }
-                    }
+                        Err(e) => {
+                            show_input_popup(
+                                terminal,
+                                &format!("Error generating key pair: {}", e),
+                            )?;
+                        }
+                    },
                     // export certificate from keypair
                     KeyCode::Char('e') => {
                         if let Some(cert_path) = app.items.selected() {
@@ -176,7 +166,6 @@ pub fn run_app(
                                         &manager,
                                         terminal,
                                         &cert_path.to_string_lossy(),
-                                        &mut app.export_path,
                                     ) {
                                         Ok(()) => {
                                             show_input_popup(
@@ -205,9 +194,6 @@ pub fn run_app(
                                         &manager,
                                         terminal,
                                         &cert_path.to_string_lossy(),
-                                        &mut app.original_pw,
-                                        &mut app.pw,
-                                        &mut app.rpw,
                                     ) {
                                         Ok(()) => {
                                             show_input_popup(
@@ -236,8 +222,6 @@ pub fn run_app(
                                         &manager,
                                         terminal,
                                         &cert_path.to_string_lossy(),
-                                        &mut app.original_pw,
-                                        &mut app.validity,
                                     ) {
                                         Ok(()) => {
                                             show_input_popup(
@@ -266,8 +250,6 @@ pub fn run_app(
                                         &manager,
                                         terminal,
                                         &cert_path.to_string_lossy(),
-                                        &mut app.original_pw,
-                                        &mut app.uid,
                                     ) {
                                         Ok(()) => {
                                             show_input_popup(
@@ -293,14 +275,12 @@ pub fn run_app(
                             match check_certificate(cert_path) {
                                 CertificateType::Cert(_) => {
                                     let user_emails = extract_users_from_certificate(cert_path)?;
-                                    app.users.items = user_emails;
+                                    let users = StatefulList::with_items(user_emails);
                                     match split_users_tui(
                                         &manager,
                                         terminal,
                                         &cert_path.to_string_lossy(),
-                                        &mut app.export_path,
-                                        &mut app.users,
-                                        &mut app.selected_items,
+                                        users,
                                     ) {
                                         Ok(()) => {
                                             show_input_popup(
@@ -327,14 +307,7 @@ pub fn run_app(
                             let cert_path = Path::new(&cert_path);
                             match check_certificate(cert_path) {
                                 CertificateType::Cert(_) => {
-                                    match revoke(
-                                        &manager,
-                                        terminal,
-                                        &cert_path.to_string_lossy(),
-                                        &mut app.original_pw,
-                                        &mut app.revocation_reason,
-                                        &mut app.revocation_path,
-                                    ) {
+                                    match revoke(&manager, terminal, &cert_path.to_string_lossy()) {
                                         Ok(()) => {
                                             show_input_popup(
                                                 terminal,
