@@ -15,6 +15,18 @@ use crate::{
 
 use super::certificate_manager::CertificateManager;
 
+const MIN_PASSWORD_LENGTH: usize = 8;
+
+fn validate_password(password: &str) -> Result<(), anyhow::Error> {
+    if password.len() < MIN_PASSWORD_LENGTH {
+        return Err(anyhow::anyhow!(
+            "Password must be at least {} characters",
+            MIN_PASSWORD_LENGTH
+        ));
+    }
+    Ok(())
+}
+
 // wrapper function for generating a keypair
 pub fn generate_keypair_tui(
     cert_manager: &CertificateManager,
@@ -76,9 +88,14 @@ pub fn generate_keypair_tui(
     *cipher = draw_input_prompt(terminal, &cipher_spans, true)?;
     *pw = draw_input_prompt(
         terminal,
-        &[Line::from(Span::styled("Enter password:", style))],
+        &[Line::from(Span::styled(
+            "Enter password (min. 8 chars, a passphrase is recommended):",
+            style,
+        ))],
         false,
     )?;
+    validate_password(pw)?;
+
     *rpw = draw_input_prompt(
         terminal,
         &[Line::from(Span::styled("Repeat password:", style))],
@@ -152,8 +169,15 @@ pub fn edit_password_tui(
         let original_pw = Password::from(original_pw.clone());
         match secret.decrypt_secret(&original_pw) {
             Ok(_) => {
-                *new_password =
-                    draw_input_prompt(terminal, &[Line::from("Enter new password")], false)?;
+                *new_password = draw_input_prompt(
+                    terminal,
+                    &[Line::from(
+                        "Enter new password (min. 8 chars, a passphrase is recommended):",
+                    )],
+                    false,
+                )?;
+                validate_password(new_password)?;
+
                 *repeat_password =
                     draw_input_prompt(terminal, &[Line::from("Repeat new password")], false)?;
                 if new_password == repeat_password {

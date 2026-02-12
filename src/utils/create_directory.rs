@@ -1,17 +1,8 @@
-use crossterm::{
-    event::EnableMouseCapture,
-    execute,
-    terminal::{enable_raw_mode, EnterAlternateScreen},
-};
 use std::{
     fs::{self, OpenOptions},
     io,
     path::{Path, PathBuf},
 };
-
-use ratatui::{backend::CrosstermBackend, text::Line, Terminal};
-
-use crate::app::ui::{draw_input_prompt, show_input_popup};
 
 fn create_directory(
     path: &Path,
@@ -26,8 +17,9 @@ fn create_directory(
     Ok(())
 }
 
-pub fn init_directory() -> std::io::Result<()> {
-    let home_dir = home::home_dir().unwrap();
+pub fn init_directory() -> Result<(), anyhow::Error> {
+    let home_dir =
+        home::home_dir().ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))?;
     let main_path = PathBuf::from(format!("{}/.pgpman", &home_dir.display()));
     let sk_path = PathBuf::from(format!("{}/.pgpman/secrets", &home_dir.display()));
     let cert_path = PathBuf::from(format!("{}/.pgpman/certificates", &home_dir.display()));
@@ -40,48 +32,15 @@ pub fn init_directory() -> std::io::Result<()> {
 pub fn create_file(
     f: Option<&str>,
 ) -> Result<Option<Box<dyn io::Write + Sync + Send>>, anyhow::Error> {
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
     match f {
-        None => Ok(Some(Box::new(io::stdout()))),
-        Some("-") => Ok(Some(Box::new(io::stdout()))),
-        Some(f) => {
-            let p = Path::new(f);
-            if !p.exists() {
-                Ok(Some(Box::new(
-                    OpenOptions::new()
-                        .write(true)
-                        .truncate(true)
-                        .create(true)
-                        .open(f)?,
-                )))
-            } else {
-                let should_override = draw_input_prompt(
-                    &mut terminal,
-                    &[Line::from(
-                        format!("File {:?} already exists! Override? (y/N)", p).as_str(),
-                    )],
-                    true,
-                )
-                .unwrap();
-                if should_override.to_lowercase() == "y" {
-                    Ok(Some(Box::new(
-                        OpenOptions::new()
-                            .write(true)
-                            .truncate(true)
-                            .create(true)
-                            .open(f)?,
-                    )))
-                } else {
-                    show_input_popup(&mut terminal, "Operation cancelled!").unwrap();
-                    Ok(None)
-                }
-            }
-        }
+        None | Some("-") => Ok(Some(Box::new(io::stdout()))),
+        Some(f) => Ok(Some(Box::new(
+            OpenOptions::new()
+                .write(true)
+                .truncate(true)
+                .create(true)
+                .open(f)?,
+        ))),
     }
 }
 

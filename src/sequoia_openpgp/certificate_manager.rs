@@ -241,7 +241,9 @@ impl CertificateManager {
                 String::from_utf8_lossy(ua.component().value())
             ));
             for sig in ua.signatures() {
-                let creation_time = sig.signature_creation_time().unwrap();
+                let Some(creation_time) = sig.signature_creation_time() else {
+                    continue;
+                };
                 key_details.push_str(&format!("\nSignature version: {}", sig.version()));
                 key_details.push_str(&format!("\nSignature type: {}", sig.typ()));
                 key_details.push_str(&format!(
@@ -332,7 +334,10 @@ impl CertificateManager {
             }
         }
 
-        let key_amalgation = cert.keys().next().unwrap();
+        let key_amalgation = cert
+            .keys()
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("Certificate has no keys"))?;
         let key = key_amalgation.key();
 
         // 4-check key validity
@@ -453,7 +458,10 @@ impl CertificateManager {
         if let Some(sig) = signature {
             if let Some(sig_creation_time) = sig.signature_creation_time() {
                 let kind = sig.typ();
-                let fingerprint = sig.issuer_fingerprints().next().unwrap();
+                let fingerprint = sig
+                    .issuer_fingerprints()
+                    .next()
+                    .ok_or_else(|| anyhow::anyhow!("Signature has no issuer fingerprint"))?;
                 revocation_details.push_str(&format!(
                     "Signature creation time: {}",
                     chrono::DateTime::<chrono::offset::Utc>::from(sig_creation_time)
@@ -500,7 +508,8 @@ impl CertificateManager {
                     .set_validity_period(Some(std::time::Duration::new(2 * 31536000, 0)));
             }
             _ => {
-                let duration = parse_iso8601_duration(validity.as_str()).unwrap();
+                let duration = parse_iso8601_duration(validity.as_str())
+                    .ok_or_else(|| anyhow::anyhow!("Invalid validity duration: {}", validity))?;
                 builder = builder
                     .set_creation_time(StdTime::now())
                     .set_validity_period(Some(duration));
@@ -539,7 +548,8 @@ impl CertificateManager {
         let (key, revocation_cert) = builder.generate()?;
 
         // Note: certificate on the context of the sequoia openpgp crate means the public key that can be shared
-        let home_dir = home::home_dir().unwrap();
+        let home_dir = home::home_dir()
+            .ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))?;
         let key_path =
             format!("{}/.pgpman/secrets/{}.pgp", &home_dir.display(), uid_clone).replace(" ", "");
         let revcert_path = format!(
@@ -550,7 +560,7 @@ impl CertificateManager {
         .replace(" ", "");
         // export key to path
         {
-            if let Some(w) = create_file(Some(key_path.as_str())).unwrap() {
+            if let Some(w) = create_file(Some(key_path.as_str()))? {
                 let mut w = Writer::new(w, Kind::SecretKey)?;
                 key.as_tsk().serialize(&mut w)?;
                 w.finalize()?;
@@ -559,7 +569,7 @@ impl CertificateManager {
 
         // export revocation certificate to path
         {
-            if let Some(w) = create_file(Some(revcert_path.as_str())).unwrap() {
+            if let Some(w) = create_file(Some(revcert_path.as_str()))? {
                 let mut w = Writer::new(w, Kind::Signature)?;
                 Packet::Signature(revocation_cert).serialize(&mut w)?;
                 w.finalize()?;
@@ -574,8 +584,10 @@ impl CertificateManager {
         )
         .replace(" ", "");
         {
-            if let Some(mut w) = create_file(Some(cert_path.as_str())).unwrap() {
-                key.armored().serialize(&mut w)?;
+            if let Some(mut w) = create_file(Some(cert_path.as_str()))? {
+                key.strip_secret_key_material()
+                    .armored()
+                    .serialize(&mut w)?;
             }
         }
 
@@ -589,14 +601,17 @@ impl CertificateManager {
     ) -> Result<(), anyhow::Error> {
         let cert = Cert::from_reader(BufReader::new(File::open(cert_path)?))?;
 
-        let home_dir = home::home_dir().unwrap();
+        let home_dir = home::home_dir()
+            .ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))?;
         let export_path = format!(
             "{}/.pgpman/certificates/{}",
             &home_dir.display(),
             ex_file_name
         );
         if let Some(mut out_cert) = create_file(Some(export_path.as_str()))? {
-            cert.armored().serialize(&mut out_cert)?;
+            cert.strip_secret_key_material()
+                .armored()
+                .serialize(&mut out_cert)?;
         }
 
         Ok(())
@@ -650,7 +665,8 @@ impl CertificateManager {
                 sig = vc.primary_key().set_expiration_time(&mut keypair, None)?;
             }
             _ => {
-                let duration = parse_iso8601_duration(validity.as_str()).unwrap();
+                let duration = parse_iso8601_duration(validity.as_str())
+                    .ok_or_else(|| anyhow::anyhow!("Invalid validity duration: {}", validity))?;
                 let t = StdTime::now() + duration;
                 sig = vc
                     .primary_key()
@@ -715,7 +731,8 @@ impl CertificateManager {
             todo: should the original public key be maintained or deleted ?
         */
         let cert = Cert::from_reader(BufReader::new(File::open(cert_path)?))?;
-        let home_dir = home::home_dir().unwrap();
+        let home_dir = home::home_dir()
+            .ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))?;
         let export_path = format!(
             "{}/.pgpman/certificates/{}",
             &home_dir.display(),
@@ -730,7 +747,7 @@ impl CertificateManager {
             }
         });
         if let Some(mut out_cert) = create_file(Some(export_path.as_str()))? {
-            cp.serialize(&mut out_cert).unwrap();
+            cp.serialize(&mut out_cert)?;
         }
 
         Ok(())
@@ -789,9 +806,9 @@ impl CertificateManager {
     }
 
     pub fn revoke_certificate(&self, cert_path: &str, rev_cert: &str) -> Result<(), anyhow::Error> {
-        let cert = Cert::from_reader(BufReader::new(File::open(cert_path).unwrap())).unwrap();
+        let cert = Cert::from_reader(BufReader::new(File::open(cert_path)?))?;
 
-        let pile = PacketPile::from_reader(BufReader::new(File::open(rev_cert).unwrap()))?;
+        let pile = PacketPile::from_reader(BufReader::new(File::open(rev_cert)?))?;
         // extract packets from the revocation certificate
         let packets: Vec<Packet> = pile.into();
 

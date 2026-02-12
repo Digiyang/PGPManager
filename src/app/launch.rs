@@ -34,8 +34,9 @@ use super::{
 
 // todo: move the function to a separate file
 pub fn clear_screen() {
-    let output = Command::new("clear").output().unwrap();
-    println!("{}", String::from_utf8_lossy(&output.stdout));
+    if let Ok(output) = Command::new("clear").output() {
+        print!("{}", String::from_utf8_lossy(&output.stdout));
+    }
 }
 
 pub fn run_app(
@@ -49,13 +50,20 @@ pub fn run_app(
     thread::spawn(move || {
         let mut last_event_time = Instant::now();
         loop {
-            if event::poll(Duration::from_millis(100)).unwrap() {
-                let event = event::read().unwrap();
-                tx.send(event).unwrap();
-                last_event_time = Instant::now();
+            let event = if event::poll(Duration::from_millis(100)).unwrap_or(false) {
+                match event::read() {
+                    Ok(ev) => ev,
+                    Err(_) => break,
+                }
             } else if Instant::now().duration_since(last_event_time) > Duration::from_secs(1) {
-                tx.send(crossterm::event::Event::Resize(0, 0)).unwrap();
-                last_event_time = Instant::now();
+                crossterm::event::Event::Resize(0, 0)
+            } else {
+                continue;
+            };
+            last_event_time = Instant::now();
+            // Exit thread when receiver is dropped (app has quit)
+            if tx.send(event).is_err() {
+                break;
             }
         }
     });

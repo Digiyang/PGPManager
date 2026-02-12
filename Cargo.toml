@@ -12,4 +12,6 @@ home = "0.5"
 ratatui = "0.30"
 
 [dev-dependencies]
+home = "0.5"
+sequoia-openpgp = "2.2"
 tempfile = "3.8"
