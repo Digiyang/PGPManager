@@ -24,6 +24,23 @@ fn validate_password(password: &str) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
+fn validate_not_empty(value: &str, field_name: &str) -> Result<(), anyhow::Error> {
+    if value.trim().is_empty() {
+        return Err(anyhow::anyhow!("{} must not be empty", field_name));
+    }
+    Ok(())
+}
+
+fn validate_filename(name: &str) -> Result<(), anyhow::Error> {
+    validate_not_empty(name, "Filename")?;
+    if name.contains("..") || name.contains('/') || name.contains('\\') {
+        return Err(anyhow::anyhow!(
+            "Invalid filename: must not contain '..', '/' or '\\'"
+        ));
+    }
+    Ok(())
+}
+
 // wrapper function for generating a keypair
 pub fn generate_keypair_tui(
     cert_manager: &CertificateManager,
@@ -38,6 +55,7 @@ pub fn generate_keypair_tui(
         ))],
         true,
     )?;
+    validate_not_empty(&user_id, "User ID")?;
 
     let prompt_validity = vec![
         "Please specify a validity duration for your key:",
@@ -125,6 +143,7 @@ pub fn export_certificate_tui(
                     )],
                     true,
                 )?;
+                validate_filename(&file_name)?;
 
                 cert_manager.export_certificate(cert_path, &file_name)?;
             }
@@ -241,6 +260,7 @@ pub fn add_user_tui(
     match secret.decrypt_secret(&original_pw) {
         Ok(_) => {
             let new_user = draw_input_prompt(terminal, &[Line::from("Enter new user:")], true)?;
+            validate_not_empty(&new_user, "User ID")?;
             cert_manager.add_user(cert_path, &original_pw, new_user)?;
         }
         Err(_) => {
@@ -272,6 +292,7 @@ pub fn split_users_tui(
             )],
             true,
         )?;
+        validate_filename(&file_name)?;
 
         let selected_users: Vec<String> = users
             .items
