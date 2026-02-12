@@ -1,8 +1,6 @@
 use crate::{
     sequoia_openpgp::{
-        certificate_manager::{
-            CertificateManager, CertificateOperation, CertificateOperationOutput,
-        },
+        certificate_manager::CertificateManager,
         wrapper_fun::{
             add_user_tui, edit_expiration_time_tui, edit_password_tui, export_certificate_tui,
             generate_keypair_tui, revoke, split_users_tui,
@@ -102,25 +100,13 @@ pub fn run_app(
                                 let cert_path = Path::new(&cert_path);
                                 match check_certificate(cert_path) {
                                     CertificateType::Cert(_) => {
-                                        match manager.execute(
-                                            CertificateOperation::GetCertificateDetails,
-                                            Some(&cert_path.to_string_lossy()),
-                                            None,
-                                        ) {
-                                            Ok(CertificateOperationOutput::Details(Ok(
-                                                cert_details,
-                                            ))) => {
+                                        match manager.get_key_details(&cert_path.to_string_lossy())
+                                        {
+                                            Ok(cert_details) => {
                                                 app.key_details = Some(cert_details);
                                                 app.scroll_state = 0;
                                             }
-                                            Ok(CertificateOperationOutput::Details(Err(_)))
-                                            | Err(_) => {
-                                                app.key_details = Some(
-                                                    "Error retrieving key details".to_string(),
-                                                );
-                                                app.scroll_state = 0;
-                                            }
-                                            Ok(CertificateOperationOutput::Result(_)) => {
+                                            Err(_) => {
                                                 app.key_details = Some(
                                                     "Error retrieving key details".to_string(),
                                                 );
@@ -129,26 +115,14 @@ pub fn run_app(
                                         }
                                     }
                                     CertificateType::Sig(_) => {
-                                        match manager.execute(
-                                            CertificateOperation::GetSignatureDetails,
-                                            Some(&cert_path.to_string_lossy()),
-                                            None,
-                                        ) {
-                                            Ok(CertificateOperationOutput::Details(Ok(
-                                                details,
-                                            ))) => {
+                                        match manager
+                                            .get_signature_details(&cert_path.to_string_lossy())
+                                        {
+                                            Ok(details) => {
                                                 app.key_details = Some(details);
                                                 app.scroll_state = 0;
                                             }
-                                            Ok(CertificateOperationOutput::Details(Err(_)))
-                                            | Err(_) => {
-                                                app.key_details = Some(
-                                                    "Error retrieving signature details"
-                                                        .to_string(),
-                                                );
-                                                app.scroll_state = 0;
-                                            }
-                                            Ok(CertificateOperationOutput::Result(_)) => {
+                                            Err(_) => {
                                                 app.key_details = Some(
                                                     "Error retrieving signature details"
                                                         .to_string(),
