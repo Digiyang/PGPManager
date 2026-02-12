@@ -15,7 +15,6 @@ pub struct App {
     pub original_pw: String,
     pub pw: String,
     pub rpw: String,
-    pub selected_button: usize,
     pub users: StatefulList<String>,
     pub selected_items: Vec<bool>,
     pub help_items: StatefulList<String>,
@@ -82,7 +81,6 @@ impl App {
             original_pw: String::new(),
             pw: String::new(),
             rpw: String::new(),
-            selected_button: 0,
             users: StatefulList::with_items(Vec::new()),
             selected_items: Vec::new(),
             help_items: StatefulList::with_items(vec![
