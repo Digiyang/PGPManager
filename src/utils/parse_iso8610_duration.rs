@@ -1,6 +1,10 @@
 use std::time::Duration;
 
 pub fn parse_iso8601_duration(duration_str: &str) -> Option<Duration> {
+    if duration_str.is_empty() {
+        return None;
+    }
+
     // Create a default `Duration` object to accumulate the duration components.
     let mut duration = Duration::default();
 
@@ -76,4 +80,13 @@ fn test_parse_iso8601_duration() {
         Some(Duration::from_secs(63158400))
     );
     assert_eq!(parse_iso8601_duration("Y"), None);
+    assert_eq!(parse_iso8601_duration(""), None);
+    assert_eq!(parse_iso8601_duration("abc"), None);
+    assert_eq!(parse_iso8601_duration("0d"), Some(Duration::from_secs(0)));
+    assert_eq!(
+        parse_iso8601_duration("1y2m3d"),
+        Some(Duration::from_secs(
+            31536000 + 2 * (31536000 / 12) + 3 * 86400
+        ))
+    );
 }
