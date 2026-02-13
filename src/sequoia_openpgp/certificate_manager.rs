@@ -318,7 +318,6 @@ impl CertificateManager {
             }
         }
 
-        // todo: implement default
         match cipher.as_str() {
             "1" => builder = builder.set_cipher_suite(CipherSuite::Cv25519),
             "2" => builder = builder.set_cipher_suite(CipherSuite::RSA2k),
@@ -327,7 +326,7 @@ impl CertificateManager {
             "5" => builder = builder.set_cipher_suite(CipherSuite::P256),
             "6" => builder = builder.set_cipher_suite(CipherSuite::P384),
             "7" => builder = builder.set_cipher_suite(CipherSuite::P521),
-            _ => builder = builder.set_cipher_suite(CipherSuite::Cv25519),
+            _ => return Err(anyhow::anyhow!("Invalid cipher selection: {}", cipher)),
         }
 
         // check if both passwords are the same
@@ -569,6 +568,13 @@ impl CertificateManager {
         let mut signer = secret.decrypt_secret(original)?.into_keypair()?;
 
         match reason {
+            "d" | "D" => {
+                rev = key.revoke(
+                    &mut signer,
+                    ReasonForRevocation::Unspecified,
+                    b"No reason specified",
+                )?
+            }
             "1" => {
                 rev = key.revoke(
                     &mut signer,
@@ -590,13 +596,7 @@ impl CertificateManager {
                     b"Key is compromised",
                 )?
             }
-            _ => {
-                rev = key.revoke(
-                    &mut signer,
-                    ReasonForRevocation::Unspecified,
-                    b"No reason specified",
-                )?
-            }
+            _ => return Err(anyhow::anyhow!("Invalid revocation reason: {}", reason)),
         }
 
         let (key, _) = key.insert_packets(rev)?;

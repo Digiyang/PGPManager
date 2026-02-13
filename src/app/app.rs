@@ -8,21 +8,9 @@ pub struct App {
     pub popup: bool,
     pub scroll_state: usize,
     pub current_dir: PathBuf,
-    pub export_path: String,
-    pub uid: String,
-    pub validity: String,
-    pub cipher: String,
-    pub original_pw: String,
-    pub pw: String,
-    pub rpw: String,
-    pub selected_button: usize,
-    pub users: StatefulList<String>,
-    pub selected_items: Vec<bool>,
     pub help_items: StatefulList<String>,
     pub help_descriptions: HashMap<String, String>,
     pub help_active: bool,
-    pub revocation_reason: String,
-    pub revocation_path: String,
 }
 
 impl App {
@@ -75,16 +63,6 @@ impl App {
             popup: false,
             scroll_state: 0,
             current_dir,
-            export_path: String::new(),
-            uid: String::new(),
-            validity: String::new(),
-            cipher: String::new(),
-            original_pw: String::new(),
-            pw: String::new(),
-            rpw: String::new(),
-            selected_button: 0,
-            users: StatefulList::with_items(Vec::new()),
-            selected_items: Vec::new(),
             help_items: StatefulList::with_items(vec![
                 "- h/Esc: Show/hide this help".to_string(),
                 "- q: Quit".to_string(),
@@ -102,8 +80,6 @@ impl App {
             ]),
             help_descriptions,
             help_active: false,
-            revocation_reason: String::new(),
-            revocation_path: String::new(),
         }
     }
 }
