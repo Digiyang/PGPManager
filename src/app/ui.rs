@@ -254,10 +254,17 @@ pub fn show_input_popup(
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Yellow));
 
-    let text = Text::from(Line::from(Span::styled(
-        message,
-        Style::default().fg(Color::White),
-    )));
+    let text = Text::from(
+        message
+            .lines()
+            .map(|l| {
+                Line::from(Span::styled(
+                    l.to_string(),
+                    Style::default().fg(Color::White),
+                ))
+            })
+            .collect::<Vec<Line>>(),
+    );
 
     terminal.draw(|f| {
         let rect = centered_rect(30, 20, f.area());

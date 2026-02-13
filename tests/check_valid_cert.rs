@@ -57,7 +57,10 @@ fn rejects_invalid_file() {
     fs::write(&invalid_path, b"this is not a PGP file").unwrap();
 
     assert!(
-        matches!(check_certificate(&invalid_path), CertificateType::Invalid),
+        matches!(
+            check_certificate(&invalid_path),
+            CertificateType::Invalid(_)
+        ),
         "garbage data should be recognized as Invalid"
     );
 }
@@ -67,7 +70,7 @@ fn rejects_nonexistent_file() {
     assert!(
         matches!(
             check_certificate(Path::new("/nonexistent/path/file.pgp")),
-            CertificateType::Invalid
+            CertificateType::Invalid(_)
         ),
         "non-existent file should be recognized as Invalid"
     );
@@ -80,7 +83,7 @@ fn rejects_empty_file() {
     fs::write(&empty_path, b"").unwrap();
 
     assert!(
-        matches!(check_certificate(&empty_path), CertificateType::Invalid),
+        matches!(check_certificate(&empty_path), CertificateType::Invalid(_)),
         "empty file should be recognized as Invalid"
     );
 }

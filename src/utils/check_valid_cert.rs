@@ -9,18 +9,18 @@ use std::path::Path;
 pub enum CertificateType {
     Cert(Box<Cert>),
     Sig(Box<Signature>),
-    Invalid,
+    Invalid(String),
 }
 
 pub fn check_certificate(cert_path: &Path) -> CertificateType {
     let file = match File::open(cert_path) {
         Ok(file) => file,
-        Err(_) => return CertificateType::Invalid,
+        Err(e) => return CertificateType::Invalid(format!("Cannot open file: {}", e)),
     };
     let mut reader = BufReader::new(file);
     let packet_pile = match PacketPile::from_reader(&mut reader) {
         Ok(pile) => pile,
-        Err(_) => return CertificateType::Invalid,
+        Err(e) => return CertificateType::Invalid(format!("Failed to parse PGP data: {}", e)),
     };
 
     let mut signature: Option<Signature> = None;
@@ -31,7 +31,9 @@ pub fn check_certificate(cert_path: &Path) -> CertificateType {
             Packet::Signature(sig) => {
                 if signature.is_some() {
                     // If we already found a signature, this is a second one, so it's not a standalone signature.
-                    return CertificateType::Invalid;
+                    return CertificateType::Invalid(
+                        "Multiple signatures found; not a standalone signature".into(),
+                    );
                 }
 
                 signature = Some(sig.clone());
@@ -44,7 +46,11 @@ pub fn check_certificate(cert_path: &Path) -> CertificateType {
                 break;
             }
             // Any other packet type means it's not a valid file.
-            _ => return CertificateType::Invalid,
+            _ => {
+                return CertificateType::Invalid(
+                    "Unexpected packet type; not a valid certificate or signature".into(),
+                )
+            }
         }
     }
 
@@ -57,13 +63,13 @@ pub fn check_certificate(cert_path: &Path) -> CertificateType {
                 .into_iter(),
         ) {
             Ok(cert) => CertificateType::Cert(Box::new(cert)),
-            Err(_) => CertificateType::Invalid,
+            Err(e) => CertificateType::Invalid(format!("Failed to parse certificate: {}", e)),
         }
     } else {
         // If we didn't find a key packet, it must be a standalone signature.
         match signature {
             Some(sig) => CertificateType::Sig(Box::new(sig)),
-            None => CertificateType::Invalid, // No signature found at all.
+            None => CertificateType::Invalid("No signature found in file".into()),
         }
     }
 }
