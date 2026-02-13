@@ -18,7 +18,7 @@ use std::{fs::File, io::BufReader, time::SystemTime as StdTime};
 
 use crate::app::launch::clear_screen;
 use crate::utils::create_directory::{create_file, create_secret_file};
-use crate::utils::parse_iso8610_duration::parse_iso8601_duration;
+use crate::utils::parse_iso8601_duration::parse_iso8601_duration;
 
 #[derive(Debug, Clone, Copy)]
 pub struct CertificateManager;

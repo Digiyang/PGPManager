@@ -257,12 +257,7 @@ pub fn show_input_popup(
     let text = Text::from(
         message
             .lines()
-            .map(|l| {
-                Line::from(Span::styled(
-                    l.to_string(),
-                    Style::default().fg(Color::White),
-                ))
-            })
+            .map(|l| Line::from(Span::styled(l, Style::default().fg(Color::White))))
             .collect::<Vec<Line>>(),
     );
 
