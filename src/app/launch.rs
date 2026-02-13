@@ -106,10 +106,11 @@ pub fn run_app(
                                                 app.key_details = Some(cert_details);
                                                 app.scroll_state = 0;
                                             }
-                                            Err(_) => {
-                                                app.key_details = Some(
-                                                    "Error retrieving key details".to_string(),
-                                                );
+                                            Err(e) => {
+                                                app.key_details = Some(format!(
+                                                    "Error retrieving key details:\n{}",
+                                                    e
+                                                ));
                                                 app.scroll_state = 0;
                                             }
                                         }
@@ -122,17 +123,20 @@ pub fn run_app(
                                                 app.key_details = Some(details);
                                                 app.scroll_state = 0;
                                             }
-                                            Err(_) => {
-                                                app.key_details = Some(
-                                                    "Error retrieving signature details"
-                                                        .to_string(),
-                                                );
+                                            Err(e) => {
+                                                app.key_details = Some(format!(
+                                                    "Error retrieving signature details:\n{}",
+                                                    e
+                                                ));
                                                 app.scroll_state = 0;
                                             }
                                         }
                                     }
-                                    CertificateType::Invalid => {
-                                        show_input_popup(terminal, "Not a valid certificate!")?;
+                                    CertificateType::Invalid(e) => {
+                                        show_input_popup(
+                                            terminal,
+                                            &format!("Not a valid certificate:\n{}", e),
+                                        )?;
                                     }
                                 }
                             }
@@ -152,7 +156,7 @@ pub fn run_app(
                         Err(e) => {
                             show_input_popup(
                                 terminal,
-                                &format!("Error generating key pair: {}", e),
+                                &format!("Error generating key pair:\n{}", e),
                             )?;
                         }
                     },
@@ -174,12 +178,21 @@ pub fn run_app(
                                             )?;
                                         }
                                         Err(e) => {
-                                            show_input_popup(terminal, &format!("Error: {}", e))?;
+                                            show_input_popup(terminal, &format!("Error:\n{}", e))?;
                                         }
                                     }
                                 }
-                                _ => {
-                                    show_input_popup(terminal, "Not a valid certificate!")?;
+                                CertificateType::Sig(_) => {
+                                    show_input_popup(
+                                        terminal,
+                                        "Not a valid certificate: file is a signature, not a key",
+                                    )?;
+                                }
+                                CertificateType::Invalid(e) => {
+                                    show_input_popup(
+                                        terminal,
+                                        &format!("Not a valid certificate:\n{}", e),
+                                    )?;
                                 }
                             }
                         }
@@ -202,12 +215,21 @@ pub fn run_app(
                                             )?;
                                         }
                                         Err(e) => {
-                                            show_input_popup(terminal, &format!("Error: {}", e))?;
+                                            show_input_popup(terminal, &format!("Error:\n{}", e))?;
                                         }
                                     }
                                 }
-                                _ => {
-                                    show_input_popup(terminal, "Not a valid certificate!")?;
+                                CertificateType::Sig(_) => {
+                                    show_input_popup(
+                                        terminal,
+                                        "Not a valid certificate: file is a signature, not a key",
+                                    )?;
+                                }
+                                CertificateType::Invalid(e) => {
+                                    show_input_popup(
+                                        terminal,
+                                        &format!("Not a valid certificate:\n{}", e),
+                                    )?;
                                 }
                             }
                         }
@@ -230,12 +252,21 @@ pub fn run_app(
                                             )?;
                                         }
                                         Err(e) => {
-                                            show_input_popup(terminal, &format!("Error: {}", e))?;
+                                            show_input_popup(terminal, &format!("Error:\n{}", e))?;
                                         }
                                     }
                                 }
-                                _ => {
-                                    show_input_popup(terminal, "Not a valid certificate!")?;
+                                CertificateType::Sig(_) => {
+                                    show_input_popup(
+                                        terminal,
+                                        "Not a valid certificate: file is a signature, not a key",
+                                    )?;
+                                }
+                                CertificateType::Invalid(e) => {
+                                    show_input_popup(
+                                        terminal,
+                                        &format!("Not a valid certificate:\n{}", e),
+                                    )?;
                                 }
                             }
                         }
@@ -258,12 +289,21 @@ pub fn run_app(
                                             )?;
                                         }
                                         Err(e) => {
-                                            show_input_popup(terminal, &format!("Error: {}", e))?;
+                                            show_input_popup(terminal, &format!("Error:\n{}", e))?;
                                         }
                                     }
                                 }
-                                _ => {
-                                    show_input_popup(terminal, "Not a valid certificate!")?;
+                                CertificateType::Sig(_) => {
+                                    show_input_popup(
+                                        terminal,
+                                        "Not a valid certificate: file is a signature, not a key",
+                                    )?;
+                                }
+                                CertificateType::Invalid(e) => {
+                                    show_input_popup(
+                                        terminal,
+                                        &format!("Not a valid certificate:\n{}", e),
+                                    )?;
                                 }
                             }
                         }
@@ -291,13 +331,22 @@ pub fn run_app(
                                         Err(e) => {
                                             show_input_popup(
                                                 terminal,
-                                                &format!("Split users operation failed: {}", e),
+                                                &format!("Split users operation failed:\n{}", e),
                                             )?;
                                         }
                                     }
                                 }
-                                _ => {
-                                    show_input_popup(terminal, "Not a valid certificate!")?;
+                                CertificateType::Sig(_) => {
+                                    show_input_popup(
+                                        terminal,
+                                        "Not a valid certificate: file is a signature, not a key",
+                                    )?;
+                                }
+                                CertificateType::Invalid(e) => {
+                                    show_input_popup(
+                                        terminal,
+                                        &format!("Not a valid certificate:\n{}", e),
+                                    )?;
                                 }
                             }
                         }
@@ -315,12 +364,21 @@ pub fn run_app(
                                             )?;
                                         }
                                         Err(e) => {
-                                            show_input_popup(terminal, &format!("Error: {}", e))?;
+                                            show_input_popup(terminal, &format!("Error:\n{}", e))?;
                                         }
                                     }
                                 }
-                                _ => {
-                                    show_input_popup(terminal, "Not a valid certificate!")?;
+                                CertificateType::Sig(_) => {
+                                    show_input_popup(
+                                        terminal,
+                                        "Not a valid certificate: file is a signature, not a key",
+                                    )?;
+                                }
+                                CertificateType::Invalid(e) => {
+                                    show_input_popup(
+                                        terminal,
+                                        &format!("Not a valid certificate:\n{}", e),
+                                    )?;
                                 }
                             }
                         }

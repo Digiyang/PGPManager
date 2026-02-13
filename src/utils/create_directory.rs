@@ -4,6 +4,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[cfg(unix)]
+use std::os::unix::fs::OpenOptionsExt;
+
 fn create_directory(
     path: &Path,
     secret_key_path: &Path,
@@ -14,6 +17,15 @@ fn create_directory(
     fs::create_dir_all(secret_key_path)?;
     fs::create_dir_all(cert_path)?;
     fs::create_dir_all(rev_path)?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let restricted = fs::Permissions::from_mode(0o700);
+        fs::set_permissions(secret_key_path, restricted.clone())?;
+        fs::set_permissions(rev_path, restricted)?;
+    }
+
     Ok(())
 }
 
@@ -44,6 +56,36 @@ pub fn create_file(
     }
 }
 
+pub fn create_secret_file(
+    f: Option<&str>,
+) -> Result<Option<Box<dyn io::Write + Sync + Send>>, anyhow::Error> {
+    match f {
+        None | Some("-") => Ok(Some(Box::new(io::stdout()))),
+        #[cfg(unix)]
+        Some(f) => {
+            let file = OpenOptions::new()
+                .write(true)
+                .truncate(false)
+                .create(true)
+                .mode(0o600)
+                .open(f)?;
+            // Enforce 0o600 even if the file already existed with looser permissions.
+            use std::os::unix::fs::PermissionsExt;
+            file.set_permissions(fs::Permissions::from_mode(0o600))?;
+            file.set_len(0)?;
+            Ok(Some(Box::new(file)))
+        }
+        #[cfg(not(unix))]
+        Some(f) => Ok(Some(Box::new(
+            OpenOptions::new()
+                .write(true)
+                .truncate(true)
+                .create(true)
+                .open(f)?,
+        ))),
+    }
+}
+
 #[test]
 fn test_create_folder() {
     // Create a temporary directory for testing
@@ -62,4 +104,29 @@ fn test_create_folder() {
 
     // Clean up the temporary directory
     temp_dir.close().unwrap();
+}
+
+#[test]
+#[cfg(unix)]
+fn test_create_secret_file_enforces_permissions_on_existing_file() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let temp_dir = tempfile::tempdir().unwrap();
+    let file_path = temp_dir.path().join("secret.pgp");
+
+    // Create a file with world-readable permissions (0o644).
+    fs::write(&file_path, b"old secret").unwrap();
+    fs::set_permissions(&file_path, fs::Permissions::from_mode(0o644)).unwrap();
+    assert_eq!(
+        fs::metadata(&file_path).unwrap().permissions().mode() & 0o777,
+        0o644
+    );
+
+    // Overwrite via create_secret_file — permissions must be tightened.
+    let path_str = file_path.to_str().unwrap();
+    let _writer = create_secret_file(Some(path_str)).unwrap();
+    assert_eq!(
+        fs::metadata(&file_path).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
 }

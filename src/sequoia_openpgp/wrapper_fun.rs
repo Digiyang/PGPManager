@@ -358,3 +358,63 @@ pub fn revoke(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn validate_password_rejects_too_short() {
+        assert!(validate_password("short").is_err());
+    }
+
+    #[test]
+    fn validate_password_accepts_min_length() {
+        assert!(validate_password("12345678").is_ok());
+    }
+
+    #[test]
+    fn validate_password_rejects_empty() {
+        assert!(validate_password("").is_err());
+    }
+
+    #[test]
+    fn validate_not_empty_rejects_empty() {
+        assert!(validate_not_empty("", "field").is_err());
+    }
+
+    #[test]
+    fn validate_not_empty_rejects_whitespace_only() {
+        assert!(validate_not_empty("   ", "field").is_err());
+    }
+
+    #[test]
+    fn validate_not_empty_accepts_valid() {
+        assert!(validate_not_empty("hello", "field").is_ok());
+    }
+
+    #[test]
+    fn validate_filename_rejects_empty() {
+        assert!(validate_filename("").is_err());
+    }
+
+    #[test]
+    fn validate_filename_rejects_dot_dot() {
+        assert!(validate_filename("../etc/passwd").is_err());
+    }
+
+    #[test]
+    fn validate_filename_rejects_forward_slash() {
+        assert!(validate_filename("path/file").is_err());
+    }
+
+    #[test]
+    fn validate_filename_rejects_backslash() {
+        assert!(validate_filename("path\\file").is_err());
+    }
+
+    #[test]
+    fn validate_filename_accepts_valid_name() {
+        assert!(validate_filename("my_key.pgp").is_ok());
+    }
+}
