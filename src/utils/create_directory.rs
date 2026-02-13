@@ -65,13 +65,14 @@ pub fn create_secret_file(
         Some(f) => {
             let file = OpenOptions::new()
                 .write(true)
-                .truncate(true)
+                .truncate(false)
                 .create(true)
                 .mode(0o600)
                 .open(f)?;
             // Enforce 0o600 even if the file already existed with looser permissions.
             use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(f, fs::Permissions::from_mode(0o600))?;
+            file.set_permissions(fs::Permissions::from_mode(0o600))?;
+            file.set_len(0)?;
             Ok(Some(Box::new(file)))
         }
         #[cfg(not(unix))]
