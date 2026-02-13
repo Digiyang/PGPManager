@@ -51,6 +51,9 @@ pub fn parse_iso8601_duration(duration_str: &str) -> Option<Duration> {
                 }
                 _ => return None,
             }
+        } else {
+            // Non-digit character without a preceding number — invalid.
+            return None;
         }
     }
 
@@ -72,5 +75,5 @@ fn test_parse_iso8601_duration() {
         parse_iso8601_duration("2Y1D"),
         Some(Duration::from_secs(63158400))
     );
-    assert_eq!(parse_iso8601_duration("Y"), Some(Duration::from_nanos(0)));
+    assert_eq!(parse_iso8601_duration("Y"), None);
 }
