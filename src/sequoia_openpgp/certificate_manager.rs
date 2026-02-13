@@ -17,7 +17,7 @@ use sequoia_openpgp as openpgp;
 use std::{fs::File, io::BufReader, time::SystemTime as StdTime};
 
 use crate::app::launch::clear_screen;
-use crate::utils::create_directory::create_file;
+use crate::utils::create_directory::{create_file, create_secret_file};
 use crate::utils::parse_iso8610_duration::parse_iso8601_duration;
 
 #[derive(Debug, Clone, Copy)]
@@ -361,7 +361,7 @@ impl CertificateManager {
         .replace(" ", "");
         // export key to path
         {
-            if let Some(w) = create_file(Some(key_path.as_str()))? {
+            if let Some(w) = create_secret_file(Some(key_path.as_str()))? {
                 let mut w = Writer::new(w, Kind::SecretKey)?;
                 key.as_tsk().serialize(&mut w)?;
                 w.finalize()?;
@@ -370,7 +370,7 @@ impl CertificateManager {
 
         // export revocation certificate to path
         {
-            if let Some(w) = create_file(Some(revcert_path.as_str()))? {
+            if let Some(w) = create_secret_file(Some(revcert_path.as_str()))? {
                 let mut w = Writer::new(w, Kind::Signature)?;
                 Packet::Signature(revocation_cert).serialize(&mut w)?;
                 w.finalize()?;
@@ -440,7 +440,7 @@ impl CertificateManager {
                 .encrypt_secret(&rnpw.into())?;
             key = key.insert_packets(enc)?.0;
 
-            if let Some(mut out) = create_file(Some(secret_key))? {
+            if let Some(mut out) = create_secret_file(Some(secret_key))? {
                 key.as_tsk().armored().serialize(&mut out)?;
             }
         }
@@ -476,7 +476,7 @@ impl CertificateManager {
         }
 
         let (cert, _) = cert.insert_packets(sig)?;
-        if let Some(mut out_cert) = create_file(Some(cert_path))? {
+        if let Some(mut out_cert) = create_secret_file(Some(cert_path))? {
             cert.as_tsk().armored().serialize(&mut out_cert)?;
         }
 
@@ -509,7 +509,7 @@ impl CertificateManager {
             .insert_packets(vec![Packet::from(new_userid), binding.into()])?
             .0;
 
-        if let Some(mut out) = create_file(Some(cert_path))? {
+        if let Some(mut out) = create_secret_file(Some(cert_path))? {
             key.as_tsk().armored().serialize(&mut out)?;
         }
 
@@ -600,7 +600,7 @@ impl CertificateManager {
         }
 
         let (key, _) = key.insert_packets(rev)?;
-        if let Some(mut out) = create_file(Some(cert_path))? {
+        if let Some(mut out) = create_secret_file(Some(cert_path))? {
             key.as_tsk().armored().serialize(&mut out)?;
         }
 

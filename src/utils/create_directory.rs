@@ -4,6 +4,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[cfg(unix)]
+use std::os::unix::fs::OpenOptionsExt;
+
 fn create_directory(
     path: &Path,
     secret_key_path: &Path,
@@ -14,6 +17,15 @@ fn create_directory(
     fs::create_dir_all(secret_key_path)?;
     fs::create_dir_all(cert_path)?;
     fs::create_dir_all(rev_path)?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let restricted = fs::Permissions::from_mode(0o700);
+        fs::set_permissions(secret_key_path, restricted.clone())?;
+        fs::set_permissions(rev_path, restricted)?;
+    }
+
     Ok(())
 }
 
@@ -34,6 +46,31 @@ pub fn create_file(
 ) -> Result<Option<Box<dyn io::Write + Sync + Send>>, anyhow::Error> {
     match f {
         None | Some("-") => Ok(Some(Box::new(io::stdout()))),
+        Some(f) => Ok(Some(Box::new(
+            OpenOptions::new()
+                .write(true)
+                .truncate(true)
+                .create(true)
+                .open(f)?,
+        ))),
+    }
+}
+
+pub fn create_secret_file(
+    f: Option<&str>,
+) -> Result<Option<Box<dyn io::Write + Sync + Send>>, anyhow::Error> {
+    match f {
+        None | Some("-") => Ok(Some(Box::new(io::stdout()))),
+        #[cfg(unix)]
+        Some(f) => Ok(Some(Box::new(
+            OpenOptions::new()
+                .write(true)
+                .truncate(true)
+                .create(true)
+                .mode(0o600)
+                .open(f)?,
+        ))),
+        #[cfg(not(unix))]
         Some(f) => Ok(Some(Box::new(
             OpenOptions::new()
                 .write(true)
