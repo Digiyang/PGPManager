@@ -449,6 +449,8 @@ impl CertificateManager {
             if let Some(mut out) = create_secret_file(Some(secret_key))? {
                 key.as_tsk().armored().serialize(&mut out)?;
             }
+        } else {
+            return Err(anyhow::anyhow!("Passwords do not match!"));
         }
         Ok(())
     }
