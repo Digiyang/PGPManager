@@ -15,7 +15,7 @@ fn manager() -> CertificateManager {
 
 /// Mirror the sanitization logic from `certificate_manager::sanitize_for_path`.
 fn sanitize_for_path(input: &str) -> String {
-    input.replace("..", "_").replace(['/', '\\'], "_")
+    input.replace("..", "_").replace(['/', '\\', ' '], "_")
 }
 
 /// Helper to compute the paths that `generate_keypair` writes to in ~/.pgpman/.
@@ -23,9 +23,9 @@ fn pgpman_paths(uid: &str) -> (String, String, String) {
     let home = home::home_dir().unwrap();
     let safe = sanitize_for_path(uid);
     (
-        format!("{}/.pgpman/secrets/{}.pgp", home.display(), safe).replace(' ', ""),
-        format!("{}/.pgpman/revocation/{}.rev", home.display(), safe).replace(' ', ""),
-        format!("{}/.pgpman/certificates/{}.pgp", home.display(), safe).replace(' ', ""),
+        format!("{}/.pgpman/secrets/{}.pgp", home.display(), safe),
+        format!("{}/.pgpman/revocation/{}.rev", home.display(), safe),
+        format!("{}/.pgpman/certificates/{}.pgp", home.display(), safe),
     )
 }
 

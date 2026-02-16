@@ -5,7 +5,6 @@ use crate::widgets::list::StatefulList;
 pub struct App {
     pub items: StatefulList<String>,
     pub key_details: Option<String>,
-    pub popup: bool,
     pub scroll_state: usize,
     pub current_dir: PathBuf,
     pub help_items: StatefulList<String>,
@@ -54,13 +53,12 @@ impl App {
         );
         help_descriptions.insert(
             "- Esc: Go up a directory".to_string(),
-            "Go up a directory\nNote: it will be able in a future update to abort from an operation".to_string(),
+            "Go up a directory\nNote: it will be available in a future update to abort from an operation".to_string(),
         );
 
         App {
             items: StatefulList::with_items(items),
             key_details: None,
-            popup: false,
             scroll_state: 0,
             current_dir,
             help_items: StatefulList::with_items(vec![
