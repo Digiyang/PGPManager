@@ -13,13 +13,19 @@ fn manager() -> CertificateManager {
     CertificateManager
 }
 
+/// Mirror the sanitization logic from `certificate_manager::sanitize_for_path`.
+fn sanitize_for_path(input: &str) -> String {
+    input.replace("..", "_").replace(['/', '\\'], "_")
+}
+
 /// Helper to compute the paths that `generate_keypair` writes to in ~/.pgpman/.
 fn pgpman_paths(uid: &str) -> (String, String, String) {
     let home = home::home_dir().unwrap();
+    let safe = sanitize_for_path(uid);
     (
-        format!("{}/.pgpman/secrets/{}.pgp", home.display(), uid).replace(' ', ""),
-        format!("{}/.pgpman/revocation/{}.rev", home.display(), uid).replace(' ', ""),
-        format!("{}/.pgpman/certificates/{}.pgp", home.display(), uid).replace(' ', ""),
+        format!("{}/.pgpman/secrets/{}.pgp", home.display(), safe).replace(' ', ""),
+        format!("{}/.pgpman/revocation/{}.rev", home.display(), safe).replace(' ', ""),
+        format!("{}/.pgpman/certificates/{}.pgp", home.display(), safe).replace(' ', ""),
     )
 }
 
@@ -300,4 +306,69 @@ fn generate_keypair_mismatched_passwords_fails() {
         "pass2".into(),
     );
     assert!(result.is_err(), "mismatched passwords should fail");
+}
+
+/// A User ID containing `../` must not escape ~/.pgpman/ directories.
+#[test]
+fn generate_keypair_sanitizes_path_traversal_in_uid() {
+    init_directory().unwrap();
+
+    let malicious_uid = "../evil <evil@test.invalid>";
+    let (sk_expected, rev_expected, cert_expected) = pgpman_paths(malicious_uid);
+
+    manager()
+        .generate_keypair(
+            malicious_uid.into(),
+            "1y".into(),
+            "1".into(),
+            "safepass".into(),
+            "safepass".into(),
+        )
+        .unwrap();
+
+    // All files must land inside the expected ~/.pgpman/ subdirectories
+    let home = home::home_dir().unwrap();
+    let secrets_dir = format!("{}/.pgpman/secrets", home.display());
+    let revocation_dir = format!("{}/.pgpman/revocation", home.display());
+    let certificates_dir = format!("{}/.pgpman/certificates", home.display());
+
+    assert!(
+        sk_expected.starts_with(&secrets_dir),
+        "secret key must be inside secrets dir"
+    );
+    assert!(
+        rev_expected.starts_with(&revocation_dir),
+        "revocation cert must be inside revocation dir"
+    );
+    assert!(
+        cert_expected.starts_with(&certificates_dir),
+        "public cert must be inside certificates dir"
+    );
+
+    // Files must actually exist at the sanitized paths
+    assert!(Path::new(&sk_expected).exists(), "secret key should exist");
+    assert!(
+        Path::new(&rev_expected).exists(),
+        "revocation cert should exist"
+    );
+    assert!(
+        Path::new(&cert_expected).exists(),
+        "public cert should exist"
+    );
+
+    // The filename component must not contain ".."
+    let sk_filename = Path::new(&sk_expected)
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert!(
+        !sk_filename.contains(".."),
+        "filename must not contain '..'"
+    );
+
+    // Clean up
+    let _ = fs::remove_file(&sk_expected);
+    let _ = fs::remove_file(&rev_expected);
+    let _ = fs::remove_file(&cert_expected);
 }
