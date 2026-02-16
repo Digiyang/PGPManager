@@ -23,7 +23,7 @@ use crate::utils::parse_iso8601_duration::parse_iso8601_duration;
 /// Sanitize a user ID for use as a filename component.
 /// Replaces `..`, `/`, and `\` with `_` to prevent path traversal.
 fn sanitize_for_path(input: &str) -> String {
-    input.replace("..", "_").replace(['/', '\\'], "_")
+    input.replace("..", "_").replace(['/', '\\', ' '], "_")
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -357,14 +357,12 @@ impl CertificateManager {
         // Note: certificate on the context of the sequoia openpgp crate means the public key that can be shared
         let home_dir = home::home_dir()
             .ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))?;
-        let key_path =
-            format!("{}/.pgpman/secrets/{}.pgp", &home_dir.display(), safe_uid).replace(" ", "");
+        let key_path = format!("{}/.pgpman/secrets/{}.pgp", &home_dir.display(), safe_uid);
         let revcert_path = format!(
             "{}/.pgpman/revocation/{}.rev",
             &home_dir.display(),
             safe_uid
-        )
-        .replace(" ", "");
+        );
         // export key to path
         {
             if let Some(w) = create_secret_file(Some(key_path.as_str()))? {
@@ -388,8 +386,7 @@ impl CertificateManager {
             "{}/.pgpman/certificates/{}.pgp",
             &home_dir.display(),
             safe_uid
-        )
-        .replace(" ", "");
+        );
         {
             if let Some(mut w) = create_file(Some(cert_path.as_str()))? {
                 key.strip_secret_key_material()
