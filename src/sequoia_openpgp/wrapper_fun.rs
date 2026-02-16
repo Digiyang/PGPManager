@@ -8,7 +8,7 @@ use ratatui::{
 };
 use sequoia_openpgp::{crypto::Password, parse::Parse, Cert};
 
-use crate::app::ui::{draw_input_prompt, show_user_selection_popup};
+use crate::app::ui::{draw_input_prompt, show_input_popup, show_user_selection_popup};
 
 use super::certificate_manager::CertificateManager;
 
@@ -47,15 +47,19 @@ pub fn generate_keypair_tui(
     terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
 ) -> Result<(), anyhow::Error> {
     let style = Style::default().fg(Color::Yellow);
-    let user_id = draw_input_prompt(
-        terminal,
-        &[Line::from(Span::styled(
-            "Enter user id (e.g 'Bob <Bob@domain.de>):",
-            style,
-        ))],
-        true,
-    )?;
-    validate_not_empty(&user_id, "User ID")?;
+    let user_id_prompt = [Line::from(Span::styled(
+        "Enter user id (e.g 'Bob <Bob@domain.de>):",
+        style,
+    ))];
+    let user_id = loop {
+        let input = draw_input_prompt(terminal, &user_id_prompt, true)?;
+        match validate_not_empty(&input, "User ID") {
+            Ok(()) => break input,
+            Err(e) => {
+                show_input_popup(terminal, &e.to_string())?;
+            }
+        }
+    };
 
     let prompt_validity = vec![
         "Please specify a validity duration for your key:",
@@ -72,7 +76,7 @@ pub fn generate_keypair_tui(
         .collect();
 
     let prompt_cipher = vec![
-        "Please select a cypher:",
+        "Please select a cypher (default: Cv25519):",
         "    (1) Cv25519",
         "    EdDSA and ECDH over Curve25519 with SHA512 and AES256",
         "    (2) RSA2k",
@@ -96,25 +100,28 @@ pub fn generate_keypair_tui(
 
     let validity = draw_input_prompt(terminal, &validity_spans, true)?;
     let cipher = draw_input_prompt(terminal, &cipher_spans, true)?;
-    let pw = draw_input_prompt(
-        terminal,
-        &[Line::from(Span::styled(
-            "Enter password (min. 8 chars, a passphrase is recommended):",
-            style,
-        ))],
-        false,
-    )?;
-    validate_password(&pw)?;
+    let pw_prompt = [Line::from(Span::styled(
+        "Enter password (min. 8 chars, a passphrase is recommended):",
+        style,
+    ))];
+    let pw = loop {
+        let input = draw_input_prompt(terminal, &pw_prompt, false)?;
+        match validate_password(&input) {
+            Ok(()) => break input,
+            Err(e) => {
+                show_input_popup(terminal, &e.to_string())?;
+            }
+        }
+    };
 
-    let rpw = draw_input_prompt(
-        terminal,
-        &[Line::from(Span::styled("Repeat password:", style))],
-        false,
-    )?;
-
-    if pw != rpw {
-        return Err(anyhow::anyhow!("Passwords do not match!"));
-    }
+    let rpw_prompt = [Line::from(Span::styled("Repeat password:", style))];
+    let rpw = loop {
+        let input = draw_input_prompt(terminal, &rpw_prompt, false)?;
+        if pw == input {
+            break input;
+        }
+        show_input_popup(terminal, "Passwords do not match!")?;
+    };
 
     cert_manager.generate_keypair(user_id, validity, cipher, pw, rpw)?;
     Ok(())
@@ -136,14 +143,18 @@ pub fn export_certificate_tui(
             draw_input_prompt(terminal, &[Line::from("Enter key secret")], false)?.into();
         match secret.decrypt_secret(&password) {
             Ok(_) => {
-                let file_name = draw_input_prompt(
-                    terminal,
-                    &[Line::from(
-                        "Enter exported certificate name (e.g. name.certificate.pgp):",
-                    )],
-                    true,
-                )?;
-                validate_filename(&file_name)?;
+                let file_name_prompt = [Line::from(
+                    "Enter exported certificate name (e.g. name.certificate.pgp):",
+                )];
+                let file_name = loop {
+                    let input = draw_input_prompt(terminal, &file_name_prompt, true)?;
+                    match validate_filename(&input) {
+                        Ok(()) => break input,
+                        Err(e) => {
+                            show_input_popup(terminal, &e.to_string())?;
+                        }
+                    }
+                };
 
                 cert_manager.export_certificate(cert_path, &file_name)?;
             }
@@ -171,27 +182,33 @@ pub fn edit_password_tui(
         let original_pw = Password::from(original_pw_str);
         match secret.decrypt_secret(&original_pw) {
             Ok(_) => {
-                let new_password = draw_input_prompt(
-                    terminal,
-                    &[Line::from(
-                        "Enter new password (min. 8 chars, a passphrase is recommended):",
-                    )],
-                    false,
-                )?;
-                validate_password(&new_password)?;
+                let new_pw_prompt = [Line::from(
+                    "Enter new password (min. 8 chars, a passphrase is recommended):",
+                )];
+                let new_password = loop {
+                    let input = draw_input_prompt(terminal, &new_pw_prompt, false)?;
+                    match validate_password(&input) {
+                        Ok(()) => break input,
+                        Err(e) => {
+                            show_input_popup(terminal, &e.to_string())?;
+                        }
+                    }
+                };
 
-                let repeat_password =
-                    draw_input_prompt(terminal, &[Line::from("Repeat new password")], false)?;
-                if new_password == repeat_password {
-                    cert_manager.edit_password(
-                        certificate,
-                        &original_pw,
-                        new_password,
-                        repeat_password,
-                    )?;
-                } else {
-                    return Err(anyhow::anyhow!("Passwords do not match!"));
-                }
+                let repeat_pw_prompt = [Line::from("Repeat new password")];
+                let repeat_password = loop {
+                    let input = draw_input_prompt(terminal, &repeat_pw_prompt, false)?;
+                    if new_password == input {
+                        break input;
+                    }
+                    show_input_popup(terminal, "Passwords do not match!")?;
+                };
+                cert_manager.edit_password(
+                    certificate,
+                    &original_pw,
+                    new_password,
+                    repeat_password,
+                )?;
             }
             Err(_) => {
                 return Err(anyhow::anyhow!("Wrong password!"));
@@ -259,8 +276,16 @@ pub fn add_user_tui(
     let original_pw = Password::from(original_pw_str);
     match secret.decrypt_secret(&original_pw) {
         Ok(_) => {
-            let new_user = draw_input_prompt(terminal, &[Line::from("Enter new user:")], true)?;
-            validate_not_empty(&new_user, "User ID")?;
+            let new_user_prompt = [Line::from("Enter new user:")];
+            let new_user = loop {
+                let input = draw_input_prompt(terminal, &new_user_prompt, true)?;
+                match validate_not_empty(&input, "User ID") {
+                    Ok(()) => break input,
+                    Err(e) => {
+                        show_input_popup(terminal, &e.to_string())?;
+                    }
+                }
+            };
             cert_manager.add_user(cert_path, &original_pw, new_user)?;
         }
         Err(_) => {
@@ -285,14 +310,18 @@ pub fn split_users_tui(
     let should_continue = show_user_selection_popup(terminal, &mut users, &mut selected_items)?;
 
     if let Some(true) = should_continue {
-        let file_name = draw_input_prompt(
-            terminal,
-            &[Line::from(
-                "Enter exported certificate name (e.g. name.certificate.pgp):",
-            )],
-            true,
-        )?;
-        validate_filename(&file_name)?;
+        let file_name_prompt = [Line::from(
+            "Enter exported certificate name (e.g. name.certificate.pgp):",
+        )];
+        let file_name = loop {
+            let input = draw_input_prompt(terminal, &file_name_prompt, true)?;
+            match validate_filename(&input) {
+                Ok(()) => break input,
+                Err(e) => {
+                    show_input_popup(terminal, &e.to_string())?;
+                }
+            }
+        };
 
         let selected_users: Vec<String> = users
             .items

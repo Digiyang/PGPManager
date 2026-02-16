@@ -20,6 +20,12 @@ use crate::app::launch::clear_screen;
 use crate::utils::create_directory::{create_file, create_secret_file};
 use crate::utils::parse_iso8601_duration::parse_iso8601_duration;
 
+/// Sanitize a user ID for use as a filename component.
+/// Replaces `..`, `/`, and `\` with `_` to prevent path traversal.
+fn sanitize_for_path(input: &str) -> String {
+    input.replace("..", "_").replace(['/', '\\'], "_")
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct CertificateManager;
 
@@ -294,7 +300,7 @@ impl CertificateManager {
         clear_screen();
         let mut builder = CertBuilder::new();
 
-        let uid_clone = user_id.clone();
+        let safe_uid = sanitize_for_path(&user_id);
         builder = builder.add_userid(user_id);
 
         match validity.as_str() {
@@ -319,7 +325,7 @@ impl CertificateManager {
         }
 
         match cipher.as_str() {
-            "1" => builder = builder.set_cipher_suite(CipherSuite::Cv25519),
+            "1" | "" => builder = builder.set_cipher_suite(CipherSuite::Cv25519),
             "2" => builder = builder.set_cipher_suite(CipherSuite::RSA2k),
             "3" => builder = builder.set_cipher_suite(CipherSuite::RSA3k),
             "4" => builder = builder.set_cipher_suite(CipherSuite::RSA4k),
@@ -352,11 +358,11 @@ impl CertificateManager {
         let home_dir = home::home_dir()
             .ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))?;
         let key_path =
-            format!("{}/.pgpman/secrets/{}.pgp", &home_dir.display(), uid_clone).replace(" ", "");
+            format!("{}/.pgpman/secrets/{}.pgp", &home_dir.display(), safe_uid).replace(" ", "");
         let revcert_path = format!(
             "{}/.pgpman/revocation/{}.rev",
             &home_dir.display(),
-            uid_clone
+            safe_uid
         )
         .replace(" ", "");
         // export key to path
@@ -381,7 +387,7 @@ impl CertificateManager {
         let cert_path = format!(
             "{}/.pgpman/certificates/{}.pgp",
             &home_dir.display(),
-            uid_clone
+            safe_uid
         )
         .replace(" ", "");
         {
