@@ -386,8 +386,8 @@ pub fn run_app(
                     KeyCode::Left => app.items.unselect(),
                     KeyCode::Down => {
                         if let Some(details) = &app.key_details {
-                            app.scroll_state =
-                                (app.scroll_state + 1).min(details.lines().count() - 1);
+                            app.scroll_state = (app.scroll_state + 1)
+                                .min(details.lines().count().saturating_sub(1));
                         } else {
                             app.items.next();
                         }
