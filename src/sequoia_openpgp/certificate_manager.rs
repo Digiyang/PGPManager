@@ -319,7 +319,7 @@ impl CertificateManager {
         }
 
         match cipher.as_str() {
-            "1" => builder = builder.set_cipher_suite(CipherSuite::Cv25519),
+            "1" | "" => builder = builder.set_cipher_suite(CipherSuite::Cv25519),
             "2" => builder = builder.set_cipher_suite(CipherSuite::RSA2k),
             "3" => builder = builder.set_cipher_suite(CipherSuite::RSA3k),
             "4" => builder = builder.set_cipher_suite(CipherSuite::RSA4k),
